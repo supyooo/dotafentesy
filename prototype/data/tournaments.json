@@ -1,0 +1,124 @@
+{
+  "formats": {
+    "slam": {
+      "stages": [
+        {
+          "name": "Группы",
+          "short": "Группы",
+          "date": "20–22 ноя",
+          "meta": "GSL Bo3 · 16 команд"
+        },
+        {
+          "name": "Посев и Last Chance",
+          "short": "Посев",
+          "date": "23 ноя",
+          "meta": "Bo3 · 8 команд"
+        },
+        {
+          "name": "Плей-офф",
+          "short": "Плей-офф",
+          "date": "24–27 ноя",
+          "meta": "Double elim · 6 команд"
+        },
+        {
+          "name": "Финальный день",
+          "short": "Финал",
+          "date": "29 ноя",
+          "meta": "LB-финал Bo3 · гранд-финал Bo5"
+        }
+      ]
+    }
+  },
+  "tournaments": [
+    {
+      "id": "ti",
+      "name": "The International 2026",
+      "sup": "Valve",
+      "main": "The International",
+      "em": "2026",
+      "day": "13",
+      "mon": "авг",
+      "dates": "13–23 августа 2026",
+      "place": "Oriental Sports Center · Шанхай",
+      "prize": "Эгида чемпионов",
+      "format": "slam",
+      "start": "2026-08-13T00:00:00+08:00",
+      "kicker": "Турнир · фэнтези открыто",
+      "note": "<b>Предварительно.</b> Даты, место и формат — из анонса Valve. Составы и стадии фэнтези пока как на BLAST Slam IX; рейтинги и цены — временная оценка.",
+      "theme": "ti",
+      "roster": "slam9-prelim"
+    },
+    {
+      "id": "blast",
+      "name": "BLAST Slam IX",
+      "sup": "BLAST",
+      "main": "SLAM",
+      "em": "IX",
+      "day": "20",
+      "mon": "ноя",
+      "dates": "20–29 ноября 2026",
+      "place": "Онлайн · Europe West",
+      "prize": "$750 000",
+      "format": "slam",
+      "start": "2026-11-20T00:00:00+03:00",
+      "kicker": "Турнир · фэнтези открыто",
+      "note": "<b>Предварительный список.</b> Участники Slam IX ещё не объявлены: подтверждены только NAVI. Остальные команды и составы — из заявок на Slam VIII. Рейтинги и цены — временная оценка до загрузки статистики.",
+      "theme": "blast",
+      "roster": "slam9-prelim"
+    },
+    {
+      "id": "ewc",
+      "name": "Esports World Cup",
+      "sup": "Esports",
+      "main": "World",
+      "em": "Cup",
+      "day": "—",
+      "mon": "TBA",
+      "dates": "даты следующего турнира не объявлены",
+      "place": "Эр-Рияд · LAN",
+      "prize": "TBA",
+      "format": "slam",
+      "start": null,
+      "kicker": "Турнир · фэнтези открыто",
+      "note": "<b>Предварительно.</b> Даты и участники следующего Esports World Cup не объявлены. Пока составы и формат — как на BLAST Slam IX; рейтинги и цены — временная оценка.",
+      "theme": "ewc",
+      "roster": "slam9-prelim"
+    },
+    {
+      "id": "wallachia",
+      "name": "PGL Wallachia S9",
+      "sup": "PGL",
+      "main": "Wallachia",
+      "em": "IX",
+      "day": "19",
+      "mon": "сен",
+      "dates": "19–27 сентября 2026",
+      "place": "PGL Studios · Бухарест",
+      "prize": "$1 000 000",
+      "format": "slam",
+      "start": "2026-09-19T00:00:00+03:00",
+      "kicker": "Турнир · фэнтези открыто",
+      "note": "<b>Предварительно.</b> Даты, место и призовой — Season 9 с pglesports.com. Составы и формат стадий пока как на BLAST Slam IX; рейтинги и цены — временная оценка.",
+      "theme": "wallachia",
+      "roster": "slam9-prelim"
+    },
+    {
+      "id": "dreamleague",
+      "name": "DreamLeague",
+      "sup": "ESL",
+      "main": "Dream",
+      "em": "League",
+      "day": "—",
+      "mon": "TBA",
+      "dates": "даты следующего сезона не объявлены",
+      "place": "Онлайн",
+      "prize": "TBA",
+      "format": "slam",
+      "start": null,
+      "kicker": "Турнир · фэнтези открыто",
+      "note": "<b>Предварительно.</b> Следующий сезон DreamLeague не объявлен (последний — Season 29, май 2026). Пока составы и формат — как на BLAST Slam IX; рейтинги и цены — временная оценка.",
+      "theme": "dreamleague",
+      "roster": "slam9-prelim"
+    }
+  ]
+}

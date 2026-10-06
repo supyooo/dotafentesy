@@ -1,0 +1,19 @@
+{
+  "name": "dota-fantasy",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "dev:api": "pnpm --filter @df/api dev",
+    "db:generate": "pnpm --filter @df/db generate",
+    "db:migrate": "pnpm --filter @df/db migrate",
+    "db:seed": "pnpm --filter @df/db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.6.0"
+  }
+}

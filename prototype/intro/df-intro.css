@@ -1,0 +1,43 @@
+/* Dota Fantasy — заставки «Ширина» и «Сетка». Шрифт: Saira (Google Fonts, переменная ось ширины). */
+.dfi{
+  --dfi-paper:#E9EAE6; --dfi-ink:#0B0B0C; --dfi-ink-2:#5A5E58; --dfi-signal:#E3361F;
+  --dfi-display:"Saira","Arial Narrow",Arial,sans-serif;
+  --dfi-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  position:fixed; inset:0; z-index:9999; background:var(--dfi-paper); color:var(--dfi-ink);
+  overflow:hidden; container-type:inline-size; cursor:pointer;
+  font-family:var(--dfi-display);
+}
+.dfi *{box-sizing:border-box}
+.dfi-wait>*{visibility:hidden} /* до старта анимации (ждём шрифт) — только фон */
+.dfi-wm{font-variation-settings:'wdth' 125,'wght' 900;line-height:.86;letter-spacing:-.01em;white-space:nowrap;color:var(--dfi-ink)}
+.dfi-tag{font-family:var(--dfi-mono);font-size:max(10px,1.45cqw);letter-spacing:.08em;text-transform:uppercase;color:var(--dfi-ink-2)}
+.dfi-ch{display:inline-block;font-variation-settings:'wdth' 125,'wght' 900}
+.dfi-skip{position:absolute;right:max(16px,2.5cqw);bottom:calc(max(16px,2.5cqw) + env(safe-area-inset-bottom,0px));
+  font-family:var(--dfi-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dfi-ink-2);
+  background:none;border:0;padding:8px;cursor:pointer}
+.dfi-skip:focus-visible{outline:2px solid var(--dfi-signal)}
+
+/* «Ширина» */
+.dfi-width{position:absolute;inset:0;display:grid;align-content:center;padding:0 7cqw;gap:1.6cqw}
+.dfi-width .dfi-wm{font-size:15cqw}
+.dfi-bar{height:1.1cqw;min-height:4px;width:34cqw;background:var(--dfi-signal);transform-origin:left center}
+
+/* «Сетка» */
+.dfi-bracket{position:absolute;inset:0}
+.dfi-bracket svg{position:absolute;inset:0;width:100%;height:100%}
+.dfi-bracket path{fill:none;stroke:var(--dfi-ink);stroke-width:7;stroke-linecap:square}
+.dfi-bracket .dfi-champ{fill:var(--dfi-signal)}
+.dfi-center{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:1.6cqw;text-align:center}
+.dfi-bracket .dfi-wm{font-size:11cqw;background:var(--dfi-paper);padding:0 2cqw}
+.dfi-bracket .dfi-tag{background:var(--dfi-paper);padding:.3cqw 1cqw}
+
+/* Портрет (телефон): сетка вписывается целиком; «DOTA FANTASY» в одну строку не влезает (шире экрана) —
+   переносим на две строки «DOTA / FANTASY», ширина строки FANTASY ≈ 87cqw при 17cqw */
+@container (max-width:600px){
+  .dfi-bracket .dfi-wm{font-size:17cqw;white-space:normal;width:min-content;text-align:center;line-height:.9;padding:1cqw 3cqw}
+  .dfi-bracket .dfi-tag{max-width:86cqw}
+}
+/* Портрет: горизонтальная сетка сжимается в полоску за надписью — поворачиваем её на 90°, ветки идут сверху и снизу к центру */
+@media (orientation:portrait){
+  .dfi-bracket svg{inset:auto;left:50%;top:50%;width:100vh;width:100dvh;height:100vw;transform:translate(-50%,-50%) rotate(90deg)}
+}

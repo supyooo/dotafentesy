@@ -1,0 +1,17 @@
+{
+  "name": "df-spike-live-source",
+  "private": true,
+  "type": "module",
+  "description": "Спайк live-источника (docs/08-stack.md, «Первая задача»): Steam GetLiveLeagueGames vs итог OpenDota на BLAST Slam VIII",
+  "scripts": {
+    "final": "tsx src/final.ts",
+    "live": "tsx src/live.ts",
+    "report": "tsx src/report.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

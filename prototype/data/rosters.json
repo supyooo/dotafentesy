@@ -1,0 +1,231 @@
+[
+  {
+    "id": "slam9-prelim",
+    "source": "Заявки BLAST Slam VIII (esports.gg, сентябрь 2026); Slam IX официально не объявлен, кроме NAVI",
+    "statuses": {
+      "q9": "Подтверждены на Slam IX",
+      "inv8": "Инвайт на Slam VIII",
+      "q8": "Квалификация Slam VIII"
+    },
+    "teams": [
+      {
+        "team": "ts",
+        "status": "inv8",
+        "strength_tmp": 87,
+        "players": {
+          "carry": "yatoro",
+          "mid": "larl",
+          "off": "batyuk",
+          "soft": "notme",
+          "hard": "rue"
+        }
+      },
+      {
+        "team": "pari",
+        "status": "inv8",
+        "strength_tmp": 86,
+        "players": {
+          "carry": "satanic",
+          "mid": "noone",
+          "off": "noticed",
+          "soft": "9class",
+          "hard": "dukalis"
+        }
+      },
+      {
+        "team": "xg",
+        "status": "inv8",
+        "strength_tmp": 85,
+        "players": {
+          "carry": "ame",
+          "mid": "moon",
+          "off": "zeal",
+          "soft": "xinq",
+          "hard": "boboka"
+        }
+      },
+      {
+        "team": "bb",
+        "status": "inv8",
+        "strength_tmp": 84,
+        "players": {
+          "carry": "kiritych",
+          "mid": "save",
+          "off": "miero",
+          "soft": "swedenstrong",
+          "hard": "kataomi"
+        }
+      },
+      {
+        "team": "ydx",
+        "status": "inv8",
+        "strength_tmp": 83,
+        "players": {
+          "carry": "watson",
+          "mid": "chira",
+          "off": "atf",
+          "soft": "saksa",
+          "hard": "malady"
+        }
+      },
+      {
+        "team": "aur",
+        "status": "inv8",
+        "strength_tmp": 83,
+        "players": {
+          "carry": "skiter",
+          "mid": "mikoto",
+          "off": "ws",
+          "soft": "mira",
+          "hard": "kaori"
+        }
+      },
+      {
+        "team": "tl",
+        "status": "inv8",
+        "strength_tmp": 81,
+        "players": {
+          "carry": "micke",
+          "mid": "midone",
+          "off": "wisper",
+          "soft": "boxi",
+          "hard": "tofu"
+        }
+      },
+      {
+        "team": "1w",
+        "status": "inv8",
+        "strength_tmp": 81,
+        "players": {
+          "carry": "pure",
+          "mid": "bzm",
+          "off": "33",
+          "soft": "ari",
+          "hard": "whitemon"
+        }
+      },
+      {
+        "team": "navi",
+        "status": "q9",
+        "strength_tmp": 80,
+        "players": {
+          "carry": "gotthejuice",
+          "mid": "niku",
+          "off": "pma",
+          "soft": "daze",
+          "hard": "riddys"
+        }
+      },
+      {
+        "team": "mouz",
+        "status": "q8",
+        "strength_tmp": 79,
+        "players": {
+          "carry": "423",
+          "mid": "supream",
+          "off": "boom",
+          "soft": "mrls",
+          "hard": "mooz"
+        }
+      },
+      {
+        "team": "og",
+        "status": "inv8",
+        "strength_tmp": 79,
+        "players": {
+          "carry": "natsumi",
+          "mid": "topson",
+          "off": "sss",
+          "soft": "onejey",
+          "hard": "skem"
+        }
+      },
+      {
+        "team": "lgd",
+        "status": "inv8",
+        "strength_tmp": 79,
+        "players": {
+          "carry": "wits",
+          "mid": "sumail",
+          "off": "davai",
+          "soft": "thiolicor",
+          "hard": "sneyking"
+        }
+      },
+      {
+        "team": "gl",
+        "status": "inv8",
+        "strength_tmp": 78,
+        "players": {
+          "carry": "yuma",
+          "mid": "rcy",
+          "off": "fayde",
+          "soft": "bignum",
+          "hard": "speeed"
+        }
+      },
+      {
+        "team": "lvl",
+        "status": "inv8",
+        "strength_tmp": 76,
+        "players": {
+          "carry": "woe",
+          "mid": "ainkrad",
+          "off": "bb3px",
+          "soft": "queezy",
+          "hard": "htrd"
+        }
+      },
+      {
+        "team": "yb",
+        "status": "q8",
+        "strength_tmp": 76,
+        "players": {
+          "carry": "lou",
+          "mid": "emo",
+          "off": "beyond",
+          "soft": "kaka",
+          "hard": "tianming"
+        }
+      },
+      {
+        "team": "nms",
+        "status": "q8",
+        "strength_tmp": 73,
+        "players": {
+          "carry": "jackky",
+          "mid": "ken",
+          "off": "jabz",
+          "soft": "jhocam",
+          "hard": "narman"
+        }
+      }
+    ],
+    "groups": {
+      "A": [
+        "lvl",
+        "lgd",
+        "pari",
+        "xg"
+      ],
+      "B": [
+        "1w",
+        "navi",
+        "nms",
+        "ts"
+      ],
+      "C": [
+        "bb",
+        "mouz",
+        "og",
+        "ydx"
+      ],
+      "D": [
+        "aur",
+        "gl",
+        "tl",
+        "yb"
+      ]
+    }
+  }
+]

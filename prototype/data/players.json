@@ -1,0 +1,590 @@
+[
+  {
+    "id": "yatoro",
+    "nick": "Yatoro",
+    "account_id": 321580662,
+    "photo": "photos/yatoro2.webp",
+    "rating_bonus_tmp": 3
+  },
+  {
+    "id": "larl",
+    "nick": "Larl",
+    "account_id": 106305042,
+    "photo": "photos/larl2.webp",
+    "rating_bonus_tmp": 1
+  },
+  {
+    "id": "batyuk",
+    "nick": "Batyuk",
+    "account_id": 140835095,
+    "photo": "photos/batyuk.webp",
+    "rating_bonus_tmp": -1
+  },
+  {
+    "id": "notme",
+    "nick": "not me",
+    "account_id": 218231587,
+    "photo": "photos/notme.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "rue",
+    "nick": "rue",
+    "account_id": 847565596,
+    "photo": "photos/rue2.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "satanic",
+    "nick": "Satanic",
+    "account_id": 1044002267,
+    "photo": "photos/satanic.webp",
+    "rating_bonus_tmp": 2
+  },
+  {
+    "id": "noone",
+    "nick": "No[o]ne-",
+    "account_id": 106573901,
+    "photo": "photos/noone.webp",
+    "rating_bonus_tmp": 2
+  },
+  {
+    "id": "noticed",
+    "nick": "Noticed",
+    "account_id": 195108598,
+    "photo": "photos/noticed.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "9class",
+    "nick": "9Class",
+    "account_id": 164199202,
+    "photo": "photos/9class.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "dukalis",
+    "nick": "Dukalis",
+    "account_id": 73401082,
+    "photo": "photos/dukalis.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "ame",
+    "nick": "Ame",
+    "account_id": 898754153,
+    "photo": "photos/ame.webp",
+    "rating_bonus_tmp": 3
+  },
+  {
+    "id": "moon",
+    "nick": "Moon",
+    "account_id": 113457795,
+    "photo": "photos/moon.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "zeal",
+    "nick": "Zeal",
+    "account_id": 147767183,
+    "photo": "photos/zeal.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "xinq",
+    "nick": "XinQ",
+    "account_id": 157475523,
+    "photo": "photos/xinq.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "boboka",
+    "nick": "BoBoKa",
+    "account_id": 207829314,
+    "photo": "photos/boboka.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "kiritych",
+    "nick": "Kiritych~",
+    "account_id": 172099728,
+    "photo": "photos/kiritych.webp",
+    "rating_bonus_tmp": 1
+  },
+  {
+    "id": "save",
+    "nick": "Save-",
+    "account_id": 317880638,
+    "photo": "photos/save.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "miero",
+    "nick": "MieRo",
+    "account_id": 165564598,
+    "photo": "photos/miero.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "swedenstrong",
+    "nick": "swedenstrong",
+    "account_id": 175311897,
+    "photo": "photos/swedenstrong.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "kataomi",
+    "nick": "Kataomi`",
+    "account_id": 196878136,
+    "photo": "photos/kataomi.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "watson",
+    "nick": "watson",
+    "account_id": 171262902,
+    "photo": "photos/watson.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "医者watson`"
+    ]
+  },
+  {
+    "id": "chira",
+    "nick": "CHIRA_JUNIOR",
+    "account_id": 312436974,
+    "photo": "photos/chira.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "atf",
+    "nick": "ATF",
+    "account_id": 183719386,
+    "photo": "photos/atf.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "AMMAR_THE_F"
+    ]
+  },
+  {
+    "id": "saksa",
+    "nick": "Saksa",
+    "account_id": 103735745,
+    "photo": "photos/saksa.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "malady",
+    "nick": "Malady",
+    "account_id": 93817671,
+    "photo": "photos/malady.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "Maladych"
+    ]
+  },
+  {
+    "id": "skiter",
+    "nick": "skiter",
+    "account_id": 100058342,
+    "photo": "photos/skiter.webp",
+    "rating_bonus_tmp": 1
+  },
+  {
+    "id": "mikoto",
+    "nick": "Mikoto",
+    "account_id": 301750126,
+    "photo": "photos/mikoto2.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "ws",
+    "nick": "Ws",
+    "account_id": 126842529,
+    "photo": "photos/ws.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "mira",
+    "nick": "Mira",
+    "account_id": 256156323,
+    "photo": "photos/mira2.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "kaori",
+    "nick": "kaori",
+    "account_id": 320219866,
+    "photo": "photos/kaori.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "micke",
+    "nick": "miCKe",
+    "account_id": 152962063,
+    "photo": "photos/micke.webp",
+    "rating_bonus_tmp": 1,
+    "aliases": [
+      "m1CKe"
+    ]
+  },
+  {
+    "id": "midone",
+    "nick": "MidOne",
+    "account_id": 116585378,
+    "photo": "photos/midone.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "wisper",
+    "nick": "Wisper",
+    "account_id": 292921272,
+    "photo": "photos/wisper.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "boxi",
+    "nick": "Boxi",
+    "account_id": 77490514,
+    "photo": "photos/boxi.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "tofu",
+    "nick": "tOfu",
+    "account_id": 16497807,
+    "photo": "photos/tofu.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "pure",
+    "nick": "Pure",
+    "account_id": 331855530,
+    "photo": "photos/pure.webp",
+    "rating_bonus_tmp": 2
+  },
+  {
+    "id": "bzm",
+    "nick": "bzm",
+    "account_id": 93618577,
+    "photo": "photos/bzm.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "33",
+    "nick": "33",
+    "account_id": 86698277,
+    "photo": "photos/33.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "ari",
+    "nick": "Ari",
+    "account_id": 346412363,
+    "photo": "photos/ari.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "whitemon",
+    "nick": "Whitemon",
+    "account_id": 136829091,
+    "photo": "photos/whitemon.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "gotthejuice",
+    "nick": "gotthejuice",
+    "account_id": 957204049,
+    "photo": "photos/gotthejuice.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "niku",
+    "nick": "Niku",
+    "account_id": 185590374,
+    "photo": "photos/niku.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "pma",
+    "nick": "pma",
+    "account_id": 835864135,
+    "photo": "photos/pma.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "daze",
+    "nick": "daze",
+    "account_id": 919735867,
+    "photo": "photos/daze.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "riddys",
+    "nick": "Riddys",
+    "account_id": 130991304,
+    "photo": "photos/riddys.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "423",
+    "nick": "423",
+    "account_id": 458287006,
+    "photo": "photos/423.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "supream",
+    "nick": "Supream^",
+    "account_id": 58513047,
+    "photo": "photos/supream.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "boom",
+    "nick": "BOOM",
+    "account_id": 190826739,
+    "photo": "photos/boom.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "mrls",
+    "nick": "mrls",
+    "account_id": 333351042,
+    "photo": null,
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "mooz",
+    "nick": "MoOz",
+    "account_id": 349310876,
+    "photo": "photos/mooz.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "natsumi",
+    "nick": "Natsumi",
+    "account_id": 355168766,
+    "photo": "photos/natsumi.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "topson",
+    "nick": "Topson",
+    "account_id": 94054712,
+    "photo": "photos/topson.webp",
+    "rating_bonus_tmp": 2
+  },
+  {
+    "id": "sss",
+    "nick": "SSS",
+    "account_id": 402583877,
+    "photo": "photos/sss.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "onejey",
+    "nick": "OneJey",
+    "account_id": 181267255,
+    "photo": "photos/onejey.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "skem",
+    "nick": "skem",
+    "account_id": 100594231,
+    "photo": "photos/skem.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "wits",
+    "nick": "Wits",
+    "account_id": 363758022,
+    "photo": "photos/wits.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "sumail",
+    "nick": "SumaiL-",
+    "account_id": 111620041,
+    "photo": "photos/sumail.webp",
+    "rating_bonus_tmp": 1
+  },
+  {
+    "id": "davai",
+    "nick": "Davai",
+    "account_id": 138880576,
+    "photo": "photos/davai.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "thiolicor",
+    "nick": "Thiolicor",
+    "account_id": 105045291,
+    "photo": "photos/thiolicor.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "sneyking",
+    "nick": "Sneyking",
+    "account_id": 10366616,
+    "photo": "photos/sneyking.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "timado",
+    "nick": "Timado",
+    "account_id": null,
+    "photo": "photos/timado.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "rcy",
+    "nick": "RCY",
+    "account_id": 154974246,
+    "photo": "photos/rcy.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "fayde",
+    "nick": "Fayde",
+    "account_id": 160119017,
+    "photo": "photos/fayde.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "bignum",
+    "nick": "Bignum",
+    "account_id": 90423751,
+    "photo": "photos/bignum.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "speeed",
+    "nick": "Speeed",
+    "account_id": 191362875,
+    "photo": "photos/speeed.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "woe",
+    "nick": "WoE",
+    "account_id": 1092267175,
+    "photo": "photos/woe.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "ainkrad",
+    "nick": "Ainkrad",
+    "account_id": 196482746,
+    "photo": "photos/ainkrad.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "darkniA"
+    ]
+  },
+  {
+    "id": "bb3px",
+    "nick": "bb3px",
+    "account_id": 93526520,
+    "photo": "photos/bb3px.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "queezy",
+    "nick": "queezy",
+    "account_id": 206097366,
+    "photo": "photos/queezy.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "htrd",
+    "nick": "Htrd",
+    "account_id": 340421206,
+    "photo": "photos/htrd.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "lou",
+    "nick": "Lou",
+    "account_id": 185908355,
+    "photo": "photos/lou.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "emo",
+    "nick": "Emo",
+    "account_id": 202217968,
+    "photo": "photos/emo.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "beyond",
+    "nick": "Beyond",
+    "account_id": 139031324,
+    "photo": "photos/beyond.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "kaka",
+    "nick": "kaka",
+    "account_id": 139876032,
+    "photo": "photos/kaka.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "tianming",
+    "nick": "天命",
+    "account_id": 158847773,
+    "photo": "photos/tianming.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "jackky",
+    "nick": "JaCkky",
+    "account_id": 392565237,
+    "photo": "photos/jackky.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "JACKBOYS"
+    ]
+  },
+  {
+    "id": "ken",
+    "nick": "Ken",
+    "account_id": 218367241,
+    "photo": "photos/ken.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "jabz",
+    "nick": "Jabz",
+    "account_id": 100471531,
+    "photo": "photos/jabz.webp",
+    "rating_bonus_tmp": 0,
+    "aliases": [
+      "J"
+    ]
+  },
+  {
+    "id": "jhocam",
+    "nick": "Jhocam",
+    "account_id": 152859296,
+    "photo": "photos/jhocam.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "narman",
+    "nick": "NARMAN",
+    "account_id": 343084576,
+    "photo": "photos/narman.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "yuma",
+    "nick": "Yuma",
+    "account_id": 177203952,
+    "photo": null,
+    "rating_bonus_tmp": 0
+  }
+]

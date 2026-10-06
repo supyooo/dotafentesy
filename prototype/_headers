@@ -1,0 +1,8 @@
+# Заголовки для Cloudflare Pages (https://developers.cloudflare.com/pages/configuration/headers/)
+# Демо-хостинг открыт без пароля, но в поисковики не попадаем — см. правило в CLAUDE.md.
+/*
+  X-Robots-Tag: noindex, nofollow
+
+# данные обновляются скриптами — браузер всегда перепроверяет
+/data/*
+  Cache-Control: no-cache

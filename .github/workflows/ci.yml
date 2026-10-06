@@ -1,0 +1,25 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_HOST_AUTH_METHOD: trust, POSTGRES_DB: dota_fantasy }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres@localhost:5432/dota_fantasy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: python scripts/validate_data.py
+      - run: pnpm db:migrate
+      - run: pnpm --filter @df/db seed
+      # TODO: сверка с docs/db/schema.sql (колонки и FK) — локально сделана вручную 06.10, см. packages/db/README.md
