@@ -18,6 +18,7 @@ jobs:
     env:
       STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
       DURATION: "21000"
+      SYNC_EVERY: "60"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
