@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsx watch --env-file=../../.env src/main.ts",
-    "start": "node --env-file=../../.env dist/main.js"
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "start": "node --env-file-if-exists=../../.env dist/main.js"
   },
   "dependencies": {
     "@df/db": "workspace:*",

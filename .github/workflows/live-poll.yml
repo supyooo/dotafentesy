@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: "0 */3 * * *"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/live-poll.yml", ".github/scripts/live-poll.sh"]
 concurrency:
   group: live-poll
   cancel-in-progress: false
