@@ -31,4 +31,9 @@ jobs:
       - name: Нет ключа — стоп
         if: env.STEAM_API_KEY == ''
         run: echo "Добавь секрет STEAM_API_KEY" && exit 1
+      - name: Проверка формата ключа (сам ключ не выводится)
+        run: |
+          k="$(printf '%s' "$STEAM_API_KEY" | tr -d '[:space:]')"
+          echo "длина без пробелов: ${#k} (нужно 32)"
+          if printf '%s' "$k" | grep -Eq '^[0-9A-Fa-f]{32}$'; then echo "формат: ок"; else echo "формат: НЕ 32 hex-символа — пересохрани секрет"; exit 1; fi
       - run: bash .github/scripts/live-poll.sh

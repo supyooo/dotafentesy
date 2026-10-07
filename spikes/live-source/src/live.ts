@@ -16,7 +16,7 @@ export interface LiveTick {
 }
 
 loadEnv();
-const key = process.env.STEAM_API_KEY;
+const key = process.env.STEAM_API_KEY?.trim(); // секрет могли вставить с переносом строки
 if (!key) { console.error("Нет STEAM_API_KEY: создай spikes/live-source/.env со строкой STEAM_API_KEY=… (ключ: steamcommunity.com/dev/apikey)"); process.exit(1); }
 const ia = process.argv.indexOf("--interval"), interval = (ia > 0 ? Number(process.argv[ia + 1]) : 7) * 1000;
 const roster = loadRoster();
