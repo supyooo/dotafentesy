@@ -1,0 +1,30 @@
+# Live-опрос Steam без моего компьютера. Нужен секрет STEAM_API_KEY (Settings → Secrets and variables → Actions).
+# Запуск каждые 3 ч, каждый живёт ~5 ч 50 мин; concurrency держит один активный и один в очереди — опрос без разрывов.
+# Отключить: Actions → live-poll → «…» → Disable workflow (после 11.10, когда закончится Slam VIII).
+name: live-poll
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+concurrency:
+  group: live-poll
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+      DURATION: "21000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+        working-directory: spikes/live-source
+      - name: Нет ключа — стоп
+        if: env.STEAM_API_KEY == ''
+        run: echo "Добавь секрет STEAM_API_KEY" && exit 1
+      - run: bash .github/scripts/live-poll.sh
