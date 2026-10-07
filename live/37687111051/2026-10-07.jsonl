@@ -115,3 +115,6 @@
 {"at":"2026-10-07T21:50:09.065Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-07T21:50:31.705Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-07T21:50:54.334Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-07T21:51:16.880Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-07T21:51:39.311Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-07T21:52:01.772Z","ok":false,"error":"Error: 403 Forbidden ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
