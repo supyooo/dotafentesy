@@ -1402,3 +1402,11 @@
 {"at":"2026-10-08T21:34:02.757Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-08T21:34:25.133Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-08T21:34:47.490Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:03.901Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:11.143Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:18.251Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:25.352Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:32.460Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:39.555Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:46.649Z","ok":true,"players":[]}
+{"at":"2026-10-08T21:35:53.743Z","ok":true,"players":[]}
