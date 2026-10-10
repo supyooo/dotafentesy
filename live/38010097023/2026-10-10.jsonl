@@ -103,3 +103,11 @@
 {"at":"2026-10-10T00:53:43.403Z","ok":true,"players":[]}
 {"at":"2026-10-10T00:53:50.508Z","ok":true,"players":[]}
 {"at":"2026-10-10T00:53:57.603Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-10T00:54:19.997Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:54:36.813Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:54:43.933Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:54:51.045Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:54:58.245Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:55:05.354Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:55:12.518Z","ok":true,"players":[]}
+{"at":"2026-10-10T00:55:19.647Z","ok":true,"players":[]}
