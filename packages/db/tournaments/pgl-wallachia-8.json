@@ -1,0 +1,27 @@
+{
+  "slug": "pgl-wallachia-8",
+  "source": "https://liquipedia.net/dota2/PGL/Wallachia/8 (сверено 12.10.2026; тир-1)",
+  "utc_offset": "+00:00",
+  "tournament": {
+    "name": "PGL Wallachia Season 8",
+    "opendota_league_id": 19543,
+    "organizer": {
+      "slug": "pgl",
+      "name": "PGL"
+    },
+    "status": "finished",
+    "tier": 1,
+    "fantasy": false
+  },
+  "stages": [
+    {
+      "idx": 0,
+      "name": "Весь турнир",
+      "format": "swiss",
+      "from": "2026-04-18",
+      "to": "2026-04-26",
+      "note": "история для рейтинга (docs/12 §3: последний тир-1 до TI): группы и плей-офф одной стадией, окно — по датам карт в UTC"
+    }
+  ],
+  "series": []
+}

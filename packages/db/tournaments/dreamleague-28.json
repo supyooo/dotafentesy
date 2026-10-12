@@ -1,0 +1,27 @@
+{
+  "slug": "dreamleague-28",
+  "source": "https://liquipedia.net/dota2/DreamLeague/28 (сверено 12.10.2026; тир-1)",
+  "utc_offset": "+00:00",
+  "tournament": {
+    "name": "DreamLeague Season 28",
+    "opendota_league_id": 19269,
+    "organizer": {
+      "slug": "efg",
+      "name": "ESL FACEIT Group"
+    },
+    "status": "finished",
+    "tier": 1,
+    "fantasy": false
+  },
+  "stages": [
+    {
+      "idx": 0,
+      "name": "Весь турнир",
+      "format": "round_robin",
+      "from": "2026-02-16",
+      "to": "2026-03-01",
+      "note": "история для рейтинга (docs/12 §3: последний тир-1 до TI): группы и плей-офф одной стадией, окно — по датам карт в UTC"
+    }
+  ],
+  "series": []
+}

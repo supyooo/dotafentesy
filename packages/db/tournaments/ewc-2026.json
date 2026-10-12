@@ -1,0 +1,27 @@
+{
+  "slug": "ewc-2026",
+  "source": "https://liquipedia.net/dota2/Esports_World_Cup/2026 (сверено 12.10.2026; тир-1)",
+  "utc_offset": "+00:00",
+  "tournament": {
+    "name": "Esports World Cup 2026",
+    "opendota_league_id": 19785,
+    "organizer": {
+      "slug": "ewc",
+      "name": "Esports World Cup Foundation"
+    },
+    "status": "finished",
+    "tier": 1,
+    "fantasy": false
+  },
+  "stages": [
+    {
+      "idx": 0,
+      "name": "Весь турнир",
+      "format": "round_robin",
+      "from": "2026-07-07",
+      "to": "2026-07-19",
+      "note": "история для рейтинга (docs/12 §3: последний тир-1 до TI): группы и плей-офф одной стадией, окно — по датам карт в UTC"
+    }
+  ],
+  "series": []
+}

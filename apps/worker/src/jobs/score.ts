@@ -56,15 +56,24 @@ export async function scoreTournament(db: Db, tournamentSlug: string, opts: Scor
 
   // очки за стадию — только по правилам турнира (в player_stage_points нет ruleset_id). Пересобираются целиком:
   // после разметки стадий карты переезжают между стадиями, и старые суммы иначе остались бы висеть.
+  // Очки игрока за серию — как у BLAST (02 §5 п.3): среднее за карты серии + бонус за победу в серии; очки стадии — сумма по сериям.
+  const bonus = Number((tour.config as { series_win_bonus?: number }).series_win_bonus ?? 5);
   await db.transaction(async (tx) => {
     await tx.execute(sql`delete from player_stage_points where stage_id in (select id from stages where tournament_id = ${tour.id})`);
     await tx.execute(sql`
       insert into player_stage_points (tournament_player_id, stage_id, points, maps_played)
-      select pmp.tournament_player_id, sr.stage_id, sum(pmp.points), count(*)
-      from player_map_points pmp
-      join maps m on m.id = pmp.map_id
-      join series sr on sr.id = m.series_id
-      where sr.tournament_id = ${tour.id} and pmp.ruleset_id = ${tour.scoringRulesetId}
+      select tp_id, stage_id, sum(sp), sum(n)
+      from (
+        select pmp.tournament_player_id tp_id, sr.stage_id, sr.id,
+          round(avg(pmp.points), 1) + case when bool_or(sr.winner_team_id = pms.team_id) then ${bonus} else 0 end as sp, count(*) n
+        from player_map_points pmp
+        join maps m on m.id = pmp.map_id
+        join series sr on sr.id = m.series_id
+        join tournament_players tp on tp.id = pmp.tournament_player_id
+        join player_map_stats pms on pms.map_id = m.id and pms.player_id = tp.player_id
+        where sr.tournament_id = ${tour.id} and pmp.ruleset_id = ${tour.scoringRulesetId}
+        group by 1, 2, 3
+      ) x
       group by 1, 2`);
   });
   return { rulesets: rulesets.map((r) => r.version), rows: written };

@@ -3,3 +3,5 @@ export * from "./scoring/ruleset.js";
 export * from "./scoring/points.js";
 export * from "./pricing.js";
 export * from "./positions.js";
+export * from "./rating.js";
+export * from "./economy.js";

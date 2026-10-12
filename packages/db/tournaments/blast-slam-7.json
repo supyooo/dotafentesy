@@ -1,0 +1,27 @@
+{
+  "slug": "blast-slam-7",
+  "source": "https://liquipedia.net/dota2/BLAST/SLAM/7 (сверено 12.10.2026; тир-1)",
+  "utc_offset": "+00:00",
+  "tournament": {
+    "name": "BLAST Slam VII",
+    "opendota_league_id": 19101,
+    "organizer": {
+      "slug": "blast",
+      "name": "BLAST"
+    },
+    "status": "finished",
+    "tier": 1,
+    "fantasy": false
+  },
+  "stages": [
+    {
+      "idx": 0,
+      "name": "Весь турнир",
+      "format": "round_robin",
+      "from": "2026-05-26",
+      "to": "2026-06-07",
+      "note": "история для рейтинга (docs/12 §3: последний тир-1 до TI): группы и плей-офф одной стадией, окно — по датам карт в UTC"
+    }
+  ],
+  "series": []
+}

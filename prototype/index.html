@@ -1169,19 +1169,26 @@ const BUDGET=48, MAX_TEAM=2, FREE_TR=1, TR_COST=4, LB_SWAPS=2;
 // ---------- данные: prototype/data/*.json (структура повторяет будущие таблицы: teams, players, rosters, tournaments)
 const [D_TEAMS,D_PLAYERS,D_ROSTERS,D_TOURS]=await Promise.all(['teams','players','rosters','tournaments'].map(n=>
   fetch('data/'+n+'.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error('data/'+n+'.json: HTTP '+r.status);return r.json()})));
+// реальные данные прошедших турниров (B6 до появления API): поле replay в tournaments.json → data/replay/<slug>.json,
+// выгружается из базы командой `cli export-replay <slug>`; «Сыграть стадию» проигрывает настоящие серии, очки, рейтинги и цены
+const REPLAYS={};
+await Promise.all(D_TOURS.tournaments.filter(t=>t.replay).map(t=>fetch('data/'+t.replay,{cache:'no-cache'})
+  .then(r=>r.ok?r.json():null).then(j=>{if(j)REPLAYS[t.id]=j}).catch(()=>{})));
 // пока все турниры на одном составе и формате — см. поля roster/format в tournaments.json
 const ROSTER=D_ROSTERS.find(r=>r.id===D_TOURS.tournaments[0].roster), FORMAT=D_TOURS.formats[D_TOURS.tournaments[0].format];
 const STAGES=FORMAT.stages;
+const STAGES_SIM_DATES=STAGES.map(s=>s.date);
 const PL=Object.fromEntries(D_PLAYERS.map(p=>[p.id,p])), TM=Object.fromEntries(D_TEAMS.map(t=>[t.id,t]));
 // порядок команд и игроков = порядок в составе: от него зависят id игроков в сохранённых составах пользователей
 const TEAMS=ROSTER.teams.map((e,i)=>{const t=TM[e.team];
-  return{id:i,key:t.id,name:t.name,tag:t.tag,logo:t.logo||null,base:e.strength_tmp,status:e.status,hue:t.hue,roster:ROLES.map(r=>PL[e.players[r]].nick)}});
+  return{id:i,key:t.id,name:t.name,tag:t.tag,logo:t.logo||null,base:e.strength_tmp,status:e.status,hue:t.hue,roster:ROLES.map(r=>PL[e.players[r]].nick),accs:ROLES.map(r=>PL[e.players[r]].account_id)}});
 const STATUS=ROSTER.statuses;
 const ADJ=Object.fromEntries(D_PLAYERS.filter(p=>p.rating_bonus_tmp).map(p=>[p.nick,p.rating_bonus_tmp]));
 const PHOTOS=Object.fromEntries(D_PLAYERS.filter(p=>p.photo).map(p=>[p.nick,p.photo]));
 const HUE=TEAMS.map(t=>t.hue);
 const byKey=k=>TEAMS.findIndex(t=>t.key===k);
 const GROUPS=Object.fromEntries(Object.entries(ROSTER.groups).map(([g,ks])=>[g,ks.map(byKey).sort((a,b)=>TEAMS[b].base-TEAMS[a].base)]));
+const GROUPS_SIM=JSON.parse(JSON.stringify(GROUPS));
 
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
@@ -1191,10 +1198,19 @@ const r1=x=>Math.round(x*10)/10, fmt=x=>r1(x).toFixed(1);
 function priceOf(r){const x=Math.max(0,Math.min(1,(r-72)/18));return Math.round((4.5+8*Math.pow(x,1.3))*2)/2}
 const P=[];
 TEAMS.forEach(t=>ROLES.forEach((role,i)=>{const nick=t.roster[i],rating=Math.max(60,Math.min(95,t.base+(ADJ[nick]||0)));
-  P.push({id:P.length,nick,team:t.id,role,rating,price:priceOf(rating)})}));
-const MINP=Math.min(...P.map(p=>p.price));
+  P.push({id:P.length,nick,acc:t.accs[i],team:t.id,role,rating,price:priceOf(rating),simRating:rating,simPrice:priceOf(rating)})}));
+let MINP=Math.min(...P.map(p=>p.price));
 const TP=TEAMS.map(t=>P.filter(p=>p.team===t.id));
-const STR=TP.map(ps=>ps.reduce((s,p)=>s+p.rating,0)/5);
+let STR=TP.map(ps=>ps.reduce((s,p)=>s+p.rating,0)/5);
+// турнир на реальных данных: стартовые рейтинги и цены из выгрузки (рейтинг — целым, как карточка в FIFA), группы — по
+// настоящим стартовым матчам, даты стадий — настоящие; у остальных турниров — оценка прототипа и симуляция
+const RP=()=>REPLAYS[TOUR]||null;
+const rpOf=p=>{const R=RP();return R&&p.acc!=null?R.players[String(p.acc)]||null:null};
+function applyTourData(){const R=RP();
+  P.forEach(p=>{const x=rpOf(p);p.rating=x?Math.round(x.start.rating):p.simRating;p.price=x?x.start.price:p.simPrice});
+  MINP=Math.min(...P.map(p=>p.price));STR=TP.map(ps=>ps.reduce((s,p)=>s+p.rating,0)/5);
+  Object.keys(GROUPS).forEach(g=>{GROUPS[g]=R&&R.groups[g]?R.groups[g].map(tag=>TEAMS.findIndex(t=>t.tag===tag)):GROUPS_SIM[g].slice()});
+  const dates=(TOURS[TOUR]&&TOURS[TOUR].stage_dates)||STAGES_SIM_DATES;STAGES.forEach((st,i)=>{st.date=dates[i]||st.date})}
 
 // ---------- match model
 const BASE={carry:{k:6,d:4,a:7,lh:320,gpm:640,stun:8,obs:0,stack:.3},mid:{k:7,d:4.5,a:9,lh:280,gpm:590,stun:22,obs:.3,stack:.5},off:{k:4,d:5,a:12,lh:190,gpm:460,stun:45,obs:1,stack:.8},soft:{k:3.5,d:6,a:15,lh:70,gpm:330,stun:40,obs:3,stack:2.5},hard:{k:1.8,d:6.5,a:16,lh:45,gpm:280,stun:30,obs:8,stack:2}};
@@ -1217,12 +1233,23 @@ const COEF=(()=>{const r=mulberry32(77),mk=()=>ROLES.map(role=>({role,rating:75}
 
 function runStage(k,seed,ctx){
   const r=mulberry32(seed*101+k*7919),agg={},log=[];
-  const add=(p,s)=>{const a=agg[p.id]||(agg[p.id]={k:0,d:0,a:0,lh:0,gpm:0,stun:0,obs:0,stack:0,tow:0,rosh:0,fb:0,win:0,maps:0,raw:0});for(const key in s)a[key]+=s[key];a.raw+=raw(s)};
+  const add=(p,s)=>{const a=agg[p.id]||(agg[p.id]={k:0,d:0,a:0,lh:0,gpm:0,stun:0,obs:0,stack:0,tow:0,rosh:0,fb:0,win:0,maps:0,raw:0});for(const key in s)if(key!=='pt')a[key]+=s[key];a.raw+=raw(s)};
   // форма команды на стадию (±~3.5 рейтинга) + пологая кривая: андердоги выигрывают заметно чаще
   const form=TEAMS.map(()=>gauss(r)*3.5);
-  const series=(a,b,bo,round)=>{const need=Math.ceil(bo/2);let wa=0,wb=0;
+  const simSeries=(a,b,bo,round)=>{const need=Math.ceil(bo/2);let wa=0,wb=0;
     const maps=[];while(wa<need&&wb<need){const aw=r()<1/(1+Math.exp(-((STR[a]+form[a])-(STR[b]+form[b]))/8)),ms=[];playMap(TP[a],TP[b],aw,r).forEach((s,p)=>{add(p,s);ms.push([p.id,s])});maps.push({aw,ms});aw?wa++:wb++}
     log.push({round,a,b,wa,wb,maps});return wa>wb?{w:a,l:b}:{w:b,l:a}};
+  // реальные данные: та же сетка, но серия берётся из выгрузки (пара команд в стадии k); статистика и очки — настоящие
+  const RPL=RP(),used=new Set(),byAcc=new Map(P.filter(p=>p.acc!=null).map(p=>[String(p.acc),p]));
+  const realSeries=(a,b,bo,round)=>{const st=RPL.stages[k],ta=TEAMS[a].tag,tb=TEAMS[b].tag;
+    const i=st?st.series.findIndex((s,j)=>!used.has(j)&&((s.a===ta&&s.b===tb)||(s.a===tb&&s.b===ta))):-1;
+    if(i<0){console.warn('нет серии в выгрузке',k,ta,tb);return simSeries(a,b,bo,round)}used.add(i);
+    const x=st.series[i],flip=x.a!==ta,wa=flip?x.wb:x.wa,wb=flip?x.wa:x.wb;
+    const maps=x.maps.map(m=>{const side=t=>m.players.map(([acc,s])=>[byAcc.get(String(acc)),s]).filter(([p])=>p&&p.team===t)
+        .sort((u,v)=>ROLES.indexOf(u[0].role)-ROLES.indexOf(v[0].role)).map(([p,s])=>{const st2={...s,tow:0,rosh:0,fb:0,maps:1};add(p,st2);return[p.id,st2]});
+      const A=side(a),B=side(b);return{aw:m.winner===ta,ms:A.concat(B),na:A.length}});
+    log.push({round,a,b,wa,wb,maps});return wa>wb?{w:a,l:b}:{w:b,l:a}};
+  const series=RPL?realSeries:simSeries;
   let alive;
   if(k===0){ctx.first={};ctx.second={};
     for(const g in GROUPS){const [t1,t2,t3,t4]=GROUPS[g];
@@ -1231,16 +1258,20 @@ function runStage(k,seed,ctx){
       ctx.first[g]=wm.w;ctx.second[g]=dec.w}
     alive=[...Object.values(ctx.first),...Object.values(ctx.second)];
   }else if(k===1){const f=ctx.first,s=ctx.second;
-    const s1=series(f.A,f.B,3,'Посев'),s2=series(f.C,f.D,3,'Посев'),l1=series(s.A,s.D,3,'Last Chance'),l2=series(s.B,s.C,3,'Last Chance');
+    // формат BLAST Slam (сверено со Slam VIII): посев A1–D1 и B1–C1, Last Chance A2–D2 и B2–C2
+    const s1=series(f.A,f.D,3,'Посев'),s2=series(f.B,f.C,3,'Посев'),l1=series(s.A,s.D,3,'Last Chance'),l2=series(s.B,s.C,3,'Last Chance');
     ctx.ubsf=[s1.w,s2.w];ctx.qf=[[s1.l,l2.w],[s2.l,l1.w]];alive=[s1.w,s2.w,s1.l,s2.l,l1.w,l2.w];
   }else if(k===2){const q1=series(ctx.qf[0][0],ctx.qf[0][1],3,'Верхняя сетка · 1/4'),q2=series(ctx.qf[1][0],ctx.qf[1][1],3,'Верхняя сетка · 1/4'),
       f1=series(ctx.ubsf[0],q2.w,3,'Верхняя сетка · 1/2'),f2=series(ctx.ubsf[1],q1.w,3,'Верхняя сетка · 1/2'),
-      b1=series(q1.l,f2.l,3,'Нижняя сетка · раунд 1'),b2=series(q2.l,f1.l,3,'Нижняя сетка · раунд 1'),
+      // нижняя сетка без повторных встреч (как на Slam VIII): проигравший 1/4 — с проигравшим другого полуфинала
+      b1=series(q1.l,f1.l,3,'Нижняя сетка · раунд 1'),b2=series(q2.l,f2.l,3,'Нижняя сетка · раунд 1'),
       bs=series(b1.w,b2.w,3,'Нижняя сетка · 1/2'),uf=series(f1.w,f2.w,3,'Финал верхней сетки');
     ctx.gfA=uf.w;ctx.lbf=[uf.l,bs.w];alive=[uf.w,uf.l,bs.w];
   }else{const lf=series(ctx.lbf[0],ctx.lbf[1],3,'Финал нижней сетки'),gf=series(ctx.gfA,lf.w,5,'Гранд-финал');
     ctx.champ=gf.w;ctx.runner=gf.l;ctx.third=lf.l;alive=[]}
   const pts={};for(const id in agg)pts[id]=r1(agg[id].raw*COEF[P[id].role]);
+  // реальные очки игрока за стадию — из выгрузки: сумма по сериям «среднее за карты + бонус за победу в серии» (02 §5)
+  if(RPL)P.forEach(p=>{const x=rpOf(p);if(x&&x.stages[k])pts[p.id]=x.stages[k].pts});
   return{agg,pts,log,aliveAfter:new Set(alive)};
 }
 
@@ -1250,7 +1281,8 @@ function runStage(k,seed,ctx){
 const TOURS=Object.fromEntries(D_TOURS.tournaments.map(t=>[t.id,t]));
 let TOUR=(()=>{try{const t=localStorage.getItem('df-tour');return TOURS[t]?t:'blast'}catch(e){return'blast'}})();
 const T=()=>TOURS[TOUR];
-const keyOf=t=>'df-fantasy-v7-'+t;
+// у турнира на реальных данных — свой прогресс, привязанный к файлу выгрузки (старые сохранения симуляции не мешают)
+const keyOf=t=>'df-fantasy-v7-'+t+(TOURS[t]&&TOURS[t].replay?'-'+TOURS[t].replay.replace(/\W+/g,'_'):'');
 let KEY=keyOf(TOUR);
 const MANAGERS=['Вы','Дима','Саня_мид','pos5enjoyer','Кирилл','Мила','Лёха','Артём','Настя','Гоша','rampage_only','Тимур','Вова','Ира','kek_carry','Паша'];
 const ALL=new Set(TEAMS.map(t=>t.id));
@@ -1266,14 +1298,18 @@ function freshLobby(seed){const r=mulberry32(seed*3+1),order=[...Array(16).keys(
 function newSeed(){try{return crypto.getRandomValues(new Uint32Array(1))[0]%2000000000+1}catch(e){return(Math.random()*2e9|0)+1}}
 function fresh(seed){seed=seed||newSeed();const lu=autoPick(mulberry32(seed),ALL);
   return{seed,played:0,lineup:lu,captain:bestOf(lu),cash:BUDGET-ROLES.reduce((s,k)=>s+P[lu[k]].price,0),tcArmed:false,tcUsed:null,snaps:[],lobby:freshLobby(seed),pk:{},ws:{lineup:{...lu},captain:bestOf(lu),cash:BUDGET-ROLES.reduce((s,k)=>s+P[lu[k]].price,0)}}}
-let S;function loadS(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.lineup||!S.lobby)S=fresh();if(!S.pk)S.pk={};if(!S.ws)S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash};UNDO=[]}let UNDO=[];loadS();
+let S;function loadS(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.lineup||!S.lobby)S=fresh();if(!S.pk)S.pk={};if(!S.ws)S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash};UNDO=[]}let UNDO=[];applyTourData();loadS();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let RES=[],CTX={};
 function replay(){RES=[];CTX={};for(let k=0;k<S.played;k++)RES.push(runStage(k,S.seed,CTX));computeDeltas()}
 // Динамика после каждой стадии: рейтинг ±3 по очкам за карту (среднее по позиции = 10),
 // цена +0.5 за ≥12 оч./карту, −0.5 за ≤8, ещё −0.5 если команда вылетела на этой стадии.
 let DR=[],DP=[];
-function computeDeltas(){DR=[];DP=[];RES.forEach((R,k)=>{const before=k===0?ALL:RES[k-1].aliveAfter,dr={},dp={};
+function computeDeltas(){DR=[];DP=[];
+  // реальные данные: рейтинг (docs/12) и цена v1 после стадии — из выгрузки; рейтинг показываем целым
+  if(RP()){RES.forEach((R,k)=>{const dr={},dp={};P.forEach(p=>{const x=rpOf(p);if(!x||!x.stages[k])return;const prev=k?x.stages[k-1]:x.start;
+    dr[p.id]=Math.round(x.stages[k].rating)-Math.round(prev.rating);dp[p.id]=r1(x.stages[k].price-prev.price)});DR.push(dr);DP.push(dp)});return}
+  RES.forEach((R,k)=>{const before=k===0?ALL:RES[k-1].aliveAfter,dr={},dp={};
   P.forEach(p=>{const a=R.agg[p.id];let r=0,d=0;
     if(a&&a.maps){const ppm=R.pts[p.id]/a.maps;r=Math.max(-3,Math.min(3,Math.round((ppm-10)/2)));d=ppm>=12?.5:ppm<=8?-.5:0}
     if(k<3&&before.has(p.team)&&!R.aliveAfter.has(p.team))d-=.5;
@@ -1374,7 +1410,8 @@ function card(p,o){o=o||{};return`<article class="pcard ${o.cap?'is-cap':''} ${o
   <div class="pbody"><div class="nick">${p.nick}</div><div class="sub">${tn(p.team)}${o.out?' · <span class="outt">выбыли</span>':''}</div>
   ${o.stats?`<div class="pstats">${o.stats}</div>`:''}${o.acts?`<div class="pacts">${o.acts}</div>`:''}</div></article>`}
 const emptyCard=(role,txt)=>`<div class="pcard empty"><span class="big">${RS[role]}</span><b>${RN[role]}</b><span style="font-size:13px">${txt}</span></div>`;
-const who=(p,extra,short)=>`<div class="who">${ava(p)}<div><div class="pn">${p.nick}${extra||''}</div><div class="pt">${tn(p.team)}${short?'':` · <span class="st-${TEAMS[p.team].status}">${STATUS[TEAMS[p.team].status]}</span>`}</div></div></div>`;
+// статус участия (инвайт/квалификация/подтверждены на Slam IX) — из предварительного списка Slam IX; у турнира на реальных данных не показываем
+const who=(p,extra,short)=>`<div class="who">${ava(p)}<div><div class="pn">${p.nick}${extra||''}</div><div class="pt">${tn(p.team)}${short||RP()?'':` · <span class="st-${TEAMS[p.team].status}">${STATUS[TEAMS[p.team].status]}</span>`}</div></div></div>`;
 
 function renderTimeline(){const own=TOUR==='blast';$('timeline').innerHTML=STAGES.map((s0,i)=>{const s=own?s0:{...s0,date:'стадия '+(i+1)};const cls=i<S.played?'done':i===S.played?'next':'';
   const st=i<S.played?'Сыграно':i===S.played?'Следующая':'Впереди';
@@ -1514,15 +1551,15 @@ const MC={stage:null};
 const STREAMS={blast:[['Twitch · BLASTDota','https://www.twitch.tv/blastdota'],['Twitch · BLASTDotaB','https://www.twitch.tv/blastdotab'],['blast.tv','https://blast.tv/dota']]};
 function mcUpcoming(k){const C=CTX,P2=(a,b,r)=>({a,b,round:r});
   if(k===0)return Object.keys(GROUPS).flatMap(g=>{const[t1,t2,t3,t4]=GROUPS[g];return[P2(t1,t4,'Группа '+g),P2(t2,t3,'Группа '+g)]});
-  if(k===1&&C.first)return[P2(C.first.A,C.first.B,'Посев'),P2(C.first.C,C.first.D,'Посев'),P2(C.second.A,C.second.D,'Last Chance'),P2(C.second.B,C.second.C,'Last Chance')];
+  if(k===1&&C.first)return[P2(C.first.A,C.first.D,'Посев'),P2(C.first.B,C.first.C,'Посев'),P2(C.second.A,C.second.D,'Last Chance'),P2(C.second.B,C.second.C,'Last Chance')];
   if(k===2&&C.qf)return[P2(C.qf[0][0],C.qf[0][1],'Верхняя сетка · 1/4'),P2(C.qf[1][0],C.qf[1][1],'Верхняя сетка · 1/4'),P2(C.ubsf[0],null,'Верхняя сетка · 1/2'),P2(C.ubsf[1],null,'Верхняя сетка · 1/2')];
   if(k===3&&C.lbf)return[P2(C.lbf[0],C.lbf[1],'Финал нижней сетки'),P2(C.gfA,null,'Гранд-финал · Bo5')];
   return[]}
 function mcStreamLink(i,vod){const s=STREAMS[TOUR];if(!s)return'';const[t,u]=s[i%2];return`<a class="mc-tv" href="${vod?u+'/videos':u}" target="_blank" rel="noopener">${vod?'Запись':'Смотреть'} · ${t.replace('Twitch · ','')} ↗</a>`}
 function mcMapTable(m,mine,capId,k){const head=`<tr><th>Игрок</th><th class="r">У/С/П</th><th class="r">Добив.</th><th class="r">GPM</th><th class="r">Оглуш.</th><th class="r">Варды</th><th class="r">Очки</th></tr>`;
-  const row=([id,s])=>{const p=P[id],my=mine.has(id),pt=r1(raw(s)*COEF[p.role]);
+  const row=([id,s])=>{const p=P[id],my=mine.has(id),pt=s.pt!=null?s.pt:r1(raw(s)*COEF[p.role]);
     return`<tr class="${my?'mc-my':''}"><td><b>${esc(p.nick)}</b>${my?`<span class="pf-cap" style="background:${id===capId?'var(--accent)':'var(--ink)'};color:${id===capId?'var(--accent-ink)':'var(--bg)'}">${id===capId?'мой · К':'мой'}</span>`:''} <span class="muted" style="font-size:12px">${RS[p.role]} · ${esc(TEAMS[p.team].tag)}</span></td><td class="r num">${s.k}/${s.d}/${s.a}</td><td class="r num">${s.lh}</td><td class="r num">${Math.round(s.gpm)}</td><td class="r num">${Math.round(s.stun)}</td><td class="r num">${s.obs}</td><td class="r num w">${fmt(pt)}</td></tr>`};
-  const A=m.ms.slice(0,5),B=m.ms.slice(5);
+  const na=m.na??5,A=m.ms.slice(0,na),B=m.ms.slice(na);
   return`<div class="tbox mc-tbl"><table><thead>${head}</thead><tbody>${A.map(row).join('')}<tr class="mc-sep"><td colspan="7"></td></tr>${B.map(row).join('')}</tbody></table></div>`}
 function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S.played,3):MC.stage;MC.stage=sel;
   const s=STREAMS[TOUR];
@@ -1550,7 +1587,7 @@ function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S
 // ---------- общий рейтинг: популяция ботов с составами в общем режиме
 const NBOTS=6000;
 const BYROLE=ROLES.map(role=>P.filter(p=>p.role===role));
-const BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7));
+let BOT_W=[]; // вес игрока при выборе ботами — от стартового рейтинга турнира, пересчитывается в buildWorld
 const NICK_A=['carry','mid','rosh','gank','ward','aegis','blink','bkb','farm','stack','tp','roam','deny','smoke','dagon','pudge','rapier','buyback','hex','mega'];
 const NICK_B=['lord','king','boy','enjoyer','god','bro','_ru','x','pro','master','diff','andy','_spb','_msk','kid','dad','wizard','goblin','hunter','fan'];
 let WORLD=null;
@@ -1562,7 +1599,7 @@ function botLineup(r){for(let t=0;t<300;t++){const lu=[0,0,0,0,0],cnt={};let lef
     if(!c.length){ok=false;break}const pk=pickWeighted(c,r);lu[ri]=pk.id;cnt[pk.team]=(cnt[pk.team]||0)+1;left-=pk.price}
   if(ok)return{lu,cash:left}}return{lu:autoPickArr(r),cash:0}}
 function autoPickArr(r){const lu=autoPick(r,ALL);return ROLES.map(k=>lu[k])}
-function buildWorld(){const r=mulberry32(S.seed*7+11),bots=[];
+function buildWorld(){BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7));const r=mulberry32(S.seed*7+11),bots=[];
   for(let i=0;i<NBOTS;i++){const b=botLineup(r);bots.push({lu:b.lu,cash:b.cash,per:[],tot:0,pen:0,
     name:NICK_A[r()*NICK_A.length|0]+NICK_B[r()*NICK_B.length|0]+(r()<.6?(r()*999|0):'')})}
   for(let k=0;k<=S.played&&k<4;k++){
@@ -1597,7 +1634,19 @@ function renderGlobal(){const el=$('panel-global'),W=world(),n=NBOTS+1;
   <div class="grid2"><div style="display:grid;gap:12px"><div class="sec-h"><div><h2>Рейтинг турнира</h2><p>Все участники режима с бюджетом. В прототипе — ${NBOTS.toLocaleString('ru')} ботов с разными стратегиями; в рабочей версии — все зарегистрированные.</p></div></div>
   <div class="tbox"><table><thead><tr><th class="r">#</th><th>Участник</th>${S.snaps.map((_,k)=>`<th class="r">${STAGES[k].short}</th>`).join('')}<th class="r">Всего</th><th class="r">Δ</th></tr></thead><tbody>${html}</tbody></table></div></div>${popular}</div>`}
 
-function renderRules(){const rows=[['Убийство',SC.k],['Смерть',SC.d],['Помощь',SC.a],['Добивание',SC.lh],['GPM (за единицу)',SC.gpm],['Уничтоженная вышка',SC.tow],['Рошан',SC.rosh],['Первая кровь',SC.fb],['Секунда оглушения',SC.stun],['Observer Ward',SC.obs],['Стак крипов',SC.stack],['Победа на карте',SC.win]];
+// правила турнира на реальных данных — из выгрузки (02 §5–6 после решений 12.10.2026)
+function renderRulesReal(R){const sc=R.scoring,w=sc.weights,L=[['Убийство',w.kill],['Помощь',w.assist],['Смерть',w.death],['Добивание',w.last_hit],
+    ['Урон по строениям, за 1000',w.building_damage_per_1000],['Секунда оглушения',w.stun_s],['Observer Ward поставлен',w.obs_placed],['Observer Ward врага снят',w.obs_killed],['Стак крипов',w.camp_stacked],['Победа на карте',w.win]];
+  $('panel-rules').innerHTML=`<div class="grid2"><div class="card"><h3>Очки за карту</h3><div class="tbox" style="border:0"><table><tbody>${L.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]>0?'+':''}${r[1]}</td></tr>`).join('')}</tbody></table></div>
+  <p class="note">Очки игрока за серию — среднее за её карты плюс ${sc.series_win_bonus} за победу в серии (как у BLAST). Очки стадии — сумма по сериям. Длительность карты не учитывается.</p></div>
+  <div class="card"><h3>Коэффициент позиции</h3><div class="tbox" style="border:0"><table><tbody>${ROLES.map((k,i)=>`<tr><td><span class="rp">${RS[k]}</span> ${RN[k]}</td><td class="r num">×${Number(sc.role_multipliers[i+1]).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+  <p class="note">Средний игрок любой позиции набирает около 10 очков за карту. Веса статистик по позициям ещё калибруются.</p></div></div>
+  <div class="card"><h3>Рейтинг и цена</h3><ul class="plain">
+  <li><b>Рейтинг</b> — уровень игры на своей позиции: статистика в минуту против обычной для той же позиции в том же исходе карты. Средний игрок тир-1 — 80, максимум 99. Отправная точка — The International 2026, дальше обновляется после каждой стадии.</li>
+  <li><b>Цена</b> — рейтинг плюс сила команды (шанс выиграть карту): при одинаковом рейтинге игрок сильной команды дороже. Пересчитывается после каждой стадии; у выбывших — замораживается. Версия v1 — для тестов.</li>
+  <li>Пять игроков, по одному на позицию, бюджет ${BUDGET}.0, не больше ${MAX_TEAM} из одной команды. Капитан ×2. Между стадиями ${FREE_TR} трансфер бесплатно, каждый следующий −${TR_COST} очка.</li></ul>
+  <p class="note">Матчи, статистика и очки — настоящие (BLAST Slam VIII, OpenDota). ${esc(R.rules)}</p></div>`}
+function renderRules(){if(RP())return renderRulesReal(RP());const rows=[['Убийство',SC.k],['Смерть',SC.d],['Помощь',SC.a],['Добивание',SC.lh],['GPM (за единицу)',SC.gpm],['Уничтоженная вышка',SC.tow],['Рошан',SC.rosh],['Первая кровь',SC.fb],['Секунда оглушения',SC.stun],['Observer Ward',SC.obs],['Стак крипов',SC.stack],['Победа на карте',SC.win]];
   $('panel-rules').innerHTML=`<div class="grid2"><div class="card"><h3>Очки за карту</h3><div class="tbox" style="border:0"><table><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]>0?'+':''}${r[1]}</td></tr>`).join('')}</tbody></table></div>
   <p class="note">Очки считаются за каждую карту, суммируются за стадию и умножаются на коэффициент позиции.</p></div>
   <div class="card"><h3>Коэффициент позиции</h3><div class="tbox" style="border:0"><table><tbody>${ROLES.map(k=>`<tr><td><span class="rp">${RS[k]}</span> ${RN[k]}</td><td class="r num">×${COEF[k].toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
@@ -1661,9 +1710,9 @@ function pastCard(pid,skin,day,mon){const t=pfById(pid);
       <div><h3>${esc(t.name)}</h3><div class="meta">${esc(t.dates.replace(' · пример',''))} · завершён</div><div class="meta tc-st">${f1(t.total)} очков · ${esc(t.res)} · пример</div></div>
       <span class="btn primary go">Итоги</span></button>`}
 function renderTournaments(){
-  $('tour-list').innerHTML=`<h3 class="tl-h">Идёт</h3>${tourCard('blast','Идёт · '+tourStatus('blast'))}
+  $('tour-list').innerHTML=`<h3 class="tl-h">${RP()||REPLAYS.blast?'Реальные данные':'Идёт'}</h3>${tourCard('blast',(REPLAYS.blast?'Реальные результаты · ':'Идёт · ')+tourStatus('blast'))}
     <h3 class="tl-h">Скоро</h3>${tourCard('dreamleague','Даты не объявлены')}${tourCard('ewc','Даты не объявлены')}
-    <h3 class="tl-h">Прошли</h3>${tourCard('ti','Прошёл · можно сыграть как демо')}${pastCard('slam8','blast','29','сен')}${pastCard('wall','wallachia','19','сен')}
+    <h3 class="tl-h">Прошли</h3>${tourCard('ti','Прошёл · можно сыграть как демо')}${REPLAYS.blast?'':pastCard('slam8','blast','29','сен')}${pastCard('wall','wallachia','19','сен')}
     <p class="note">В прототипе The International, DreamLeague и EWC можно открыть и сыграть как демо — у каждого турнира свой прогресс. Прошедшие турниры открываются итогами из личного кабинета.</p>`;
   $('tour-list').querySelectorAll('[data-tour]').forEach(b=>b.onclick=()=>enterTour(b.dataset.tour));
   $('tour-list').querySelectorAll('[data-past]').forEach(b=>b.onclick=()=>pfOpenTour(b.dataset.past));renderHomeHub()}
@@ -1674,7 +1723,7 @@ function renderHero(){const t=T();
     ${TOUR==='ewc'?'<h1 class="sr-only">Esports World Cup</h1><span class="ewc-logo" role="img" aria-label="EWC"></span>':TOUR==='dreamleague'?'<h1 class="sr-only">DreamLeague</h1><img class="dl-logo" src="brand/dreamleague/dl-logo-white.png" alt="DreamLeague powered by Intel"><span class="dl-neon" data-text="Fantasy" aria-hidden="true">Fantasy</span>':TOUR==='wallachia'?'<h1 class="sr-only">PGL Wallachia Season 9</h1><img class="wal-logo" src="brand/wallachia/logo-s9.webp" alt="PGL Wallachia Season IX"><span class="wal-rule" aria-hidden="true"></span>':TOUR==='ti'?'<h1 class="sr-only">The International 2026</h1><img class="ti-logo" src="brand/ti/ti2026-logo.webp" alt="The International"><span class="ti-city" aria-hidden="true">Shanghai</span>':`<h1><small>${t.sup}</small>${t.main} <em>${t.em}</em></h1>`}
     <div class="facts"><span class="fact"><b>${t.dates}</b></span><span class="fact">${t.place}</span><span class="fact"><b>${t.prize}</b></span><span class="fact">16 команд</span><span class="fact">${t.format}</span></div>
   </div><div class="note-box">${t.note}</div></div>`}
-function switchTour(id){if(!TOURS[id])return;TOUR=id;MC.stage=null;try{localStorage.setItem('df-tour',id)}catch(e){}KEY=keyOf(id);loadS();WORLD=null;PAST=null;replay();advanceDraft();save();render()}
+function switchTour(id){if(!TOURS[id])return;TOUR=id;MC.stage=null;try{localStorage.setItem('df-tour',id)}catch(e){}KEY=keyOf(id);applyTourData();loadS();WORLD=null;PAST=null;replay();advanceDraft();save();render()}
 function enterTour(id){switchTour(id);playIntro(id,()=>{if(location.hash==='#p-overview')route();else location.hash='#p-overview'})}
 function daysLeft(){if(!T().start)return'Даты не объявлены.';const d=Math.ceil((new Date(T().start)-Date.now())/864e5);return d>1?`До старта ${d} ${plural(d,'день','дня','дней')}.`:d===1?'Старт завтра.':'Турнир начался.'}
 function plural(n,a,b,c){const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
@@ -1728,7 +1777,7 @@ const byStr=a=>a.slice().sort((x,y)=>STR[y]-STR[x]);
 function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],ser=(a,b,round,i)=>Q.push({id:`s${k}-${i}`,k,type:'ser',a,b,round,max:2});
   if(k===0){let i=0;for(const g in GROUPS){const[t1,t2,t3,t4]=GROUPS[g];ser(t1,t4,'Группа '+g,i++);ser(t2,t3,'Группа '+g,i++)}
     for(const g in GROUPS)Q.push({id:'g0-'+g,k,type:'two',opts:GROUPS[g],title:'Выйдут из группы '+g,max:2})}
-  else if(k===1){if(!C.first)return Q;const f=C.first,s=C.second;ser(f.A,f.B,'Посев',0);ser(f.C,f.D,'Посев',1);ser(s.A,s.D,'Last Chance',2);ser(s.B,s.C,'Last Chance',3)}
+  else if(k===1){if(!C.first)return Q;const f=C.first,s=C.second;ser(f.A,f.D,'Посев',0);ser(f.B,f.C,'Посев',1);ser(s.A,s.D,'Last Chance',2);ser(s.B,s.C,'Last Chance',3)}
   else if(k===2){if(!C.qf)return Q;ser(C.qf[0][0],C.qf[0][1],'Верхняя сетка · 1/4',0);ser(C.qf[1][0],C.qf[1][1],'Верхняя сетка · 1/4',1);
     Q.push({id:'ubf',k,type:'one',opts:byStr([C.ubsf[0],C.ubsf[1],...C.qf.flat()]),title:'Выиграет финал верхней сетки',max:2})}
   else{if(!C.lbf)return Q;ser(C.lbf[0],C.lbf[1],'Финал нижней сетки',0);Q.push({id:'champ',k,type:'one',opts:byStr([C.gfA,C.lbf[0],C.lbf[1]]),title:'Чемпион турнира',max:2})}
@@ -1796,10 +1845,10 @@ function bkPlayoff(sel){const C=CTX,L=k=>S.played>k?RES[k].log:null,L1=L(1),L2=L
   const qf=C.qf||[[null,null],[null,null]],ub=C.ubsf||[null,null],lbf=C.lbf||[null,null];
   const col=(h,inner)=>`<div class="bk-col"><span class="pf-lab">${h}</span>${inner}</div>`,stk=(...c)=>`<div class="bk-stack">${c.join('')}</div>`;
   const board=[
-    stk(col('Посев',n({k:1,label:'Посев 1',a:f.A??null,b:f.B??null,pa:'1-е A',pb:'1-е B',q:q(1,0),log:L1&&L1[0]})+n({k:1,label:'Посев 2',a:f.C??null,b:f.D??null,pa:'1-е C',pb:'1-е D',q:q(1,1),log:L1&&L1[1]}))+
+    stk(col('Посев',n({k:1,label:'Посев 1',a:f.A??null,b:f.D??null,pa:'1-е A',pb:'1-е D',q:q(1,0),log:L1&&L1[0]})+n({k:1,label:'Посев 2',a:f.B??null,b:f.C??null,pa:'1-е B',pb:'1-е C',q:q(1,1),log:L1&&L1[1]}))+
     col('Last Chance',n({k:1,label:'Last Chance 1',a:s.A??null,b:s.D??null,pa:'2-е A',pb:'2-е D',q:q(1,2),log:L1&&L1[2]})+n({k:1,label:'Last Chance 2',a:s.B??null,b:s.C??null,pa:'2-е B',pb:'2-е C',q:q(1,3),log:L1&&L1[3]}))),
     stk(col('Верхняя · 1/4',n({k:2,label:'1/4 №1',a:qf[0][0],b:qf[0][1],pa:'проигр. посева 1',pb:'поб. Last Chance 2',q:q(2,0),log:L2&&L2[0]})+n({k:2,label:'1/4 №2',a:qf[1][0],b:qf[1][1],pa:'проигр. посева 2',pb:'поб. Last Chance 1',q:q(2,1),log:L2&&L2[1]}))+
-    col('Нижняя · раунд 1',n({k:2,label:'НС раунд 1 №1',pa:'проигр. 1/4 №1',pb:'проигр. 1/2 №2',log:L2&&L2[4]})+n({k:2,label:'НС раунд 1 №2',pa:'проигр. 1/4 №2',pb:'проигр. 1/2 №1',log:L2&&L2[5]}))),
+    col('Нижняя · раунд 1',n({k:2,label:'НС раунд 1 №1',pa:'проигр. 1/4 №1',pb:'проигр. 1/2 №1',log:L2&&L2[4]})+n({k:2,label:'НС раунд 1 №2',pa:'проигр. 1/4 №2',pb:'проигр. 1/2 №2',log:L2&&L2[5]}))),
     stk(col('Верхняя · 1/2',n({k:2,label:'1/2 №1',a:ub[0],pa:'поб. посева 1',pb:'поб. 1/4 №2',log:L2&&L2[2]})+n({k:2,label:'1/2 №2',a:ub[1],pa:'поб. посева 2',pb:'поб. 1/4 №1',log:L2&&L2[3]}))+
     col('Нижняя · 1/2',n({k:2,label:'НС 1/2',pa:'поб. НС №1',pb:'поб. НС №2',log:L2&&L2[6]}))),
     stk(col('Финал верхней',n({k:2,label:'Финал верхней сетки',pa:'поб. 1/2 №1',pb:'поб. 1/2 №2',log:L2&&L2[7]}))+
