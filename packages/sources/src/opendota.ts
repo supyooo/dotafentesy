@@ -10,6 +10,8 @@ export interface ODPlayer {
   gold_per_min?: number | null; xp_per_min?: number | null; net_worth?: number | null;
   hero_damage?: number | null; tower_damage?: number | null; hero_healing?: number | null;
   stuns?: number | null; obs_placed?: number | null; observer_kills?: number | null; camps_stacked?: number | null;
+  /** после разбора: линия по первым минутам — 1 лёгкая, 2 мид, 3 сложная, 4 лес; роумер */
+  lane_role?: number | null; is_roaming?: boolean | null;
 }
 export interface ODTeam { team_id: number; name: string; tag: string }
 export interface ODMatch {
@@ -30,6 +32,8 @@ export class OpenDota {
 
 export interface NormPlayer {
   accountId: number; nickname: string; isRadiant: boolean; heroId: number;
+  /** линия (1 лёгкая, 2 мид, 3 сложная, 4 лес) и роумер — для определения позиции; null до разбора */
+  laneRole: number | null; isRoaming: boolean | null;
   stats: MapStats & { denies: number; gpm: number | null; xpm: number | null; net_worth: number | null; hero_damage: number | null };
 }
 export interface NormMap {
@@ -54,6 +58,7 @@ export function normalizeMatch(m: ODMatch): NormMap {
     draft: (m.picks_bans ?? []).map((d) => ({ orderNo: d.order, isRadiant: d.team === 0, heroId: d.hero_id, isPick: d.is_pick })),
     players: m.players.filter((p) => p.account_id).map((p) => ({
       accountId: p.account_id!, nickname: p.name || p.personaname || String(p.account_id), isRadiant: p.isRadiant, heroId: p.hero_id,
+      laneRole: p.lane_role ?? null, isRoaming: p.is_roaming ?? null,
       stats: {
         kills: p.kills, deaths: p.deaths, assists: p.assists, last_hits: p.last_hits, denies: p.denies,
         gpm: p.gold_per_min ?? null, xpm: p.xp_per_min ?? null, net_worth: p.net_worth ?? null, hero_damage: p.hero_damage ?? null,

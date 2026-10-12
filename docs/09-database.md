@@ -332,7 +332,7 @@
 | position | smallint | NN | 1–5, на турнир не меняется |
 | is_active | boolean | NN | false — стендин заменил / снят |
 | start_rating | numeric(5,2) |  | внутренний, не показываем |
-| start_price | numeric(4,1) | NN | 4.5–12.5 |
+| start_price | numeric(4,1) |  | 4.5–12.5; null — турнир только для рейтинга, без фэнтези |
 - UNIQUE (tournament_id, player_id)
 
 **`player_prices`** — Цена на начало стадии

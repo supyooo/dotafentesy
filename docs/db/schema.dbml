@@ -362,7 +362,7 @@ Table tournament_players [note: 'Игрок в пуле турнира'] {
   position smallint [not null, note: '1–5, на турнир не меняется']
   is_active boolean [not null, note: 'false — стендин заменил / снят']
   start_rating numeric(5,2) [note: 'внутренний, не показываем']
-  start_price numeric(4,1) [not null, note: '4.5–12.5']
+  start_price numeric(4,1) [note: '4.5–12.5; null — турнир только для рейтинга, без фэнтези']
   indexes {
     (tournament_id, player_id) [unique]
   }

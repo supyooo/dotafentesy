@@ -166,7 +166,7 @@ async function upsertMap(db: Db, tournamentId: number, stageId: number, m: NormM
       buildingDamage: st.building_damage ?? null, heroHealing: st.healing ?? null,
       obsPlaced: st.obs_placed ?? null, obsKilled: st.obs_killed ?? null,
       stunS: st.stun_s == null ? null : st.stun_s.toFixed(1), campsStacked: st.camps_stacked ?? null,
-      dataTier: m.tier, updatedAt: new Date(),
+      dataTier: m.tier, extra: { lane_role: p.laneRole, is_roaming: p.isRoaming }, updatedAt: new Date(),
     };
     await db.insert(s.playerMapStats).values({ mapId, playerId: pid, ...v })
       .onConflictDoUpdate({ target: [s.playerMapStats.mapId, s.playerMapStats.playerId], set: v });

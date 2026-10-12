@@ -23,7 +23,8 @@ export const tournamentPlayers = pgTable("tournament_players", {
     position: smallint("position").notNull(),
     isActive: boolean("is_active").notNull(),
     startRating: numeric("start_rating", { precision: 5, scale: 2 }),
-    startPrice: numeric("start_price", { precision: 4, scale: 1 }).notNull(),
+    /** null — турнир только для рейтинга (TI, Wallachia…), без фэнтези */
+    startPrice: numeric("start_price", { precision: 4, scale: 1 }),
 }, (t) => [
   uniqueIndex("tournament_players_tournament_id_player_id_uq").on(t.tournamentId, t.playerId),
   check("tournament_players_position_check", sql`${t.position} between 1 and 5`),

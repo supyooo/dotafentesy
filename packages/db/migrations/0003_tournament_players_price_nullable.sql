@@ -1,0 +1,1 @@
+ALTER TABLE "tournament_players" ALTER COLUMN "start_price" DROP NOT NULL;

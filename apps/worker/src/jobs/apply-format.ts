@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { schema as s, type Db } from "@df/db";
+import { addRef } from "../refs.js";
 import { recomputeSeries } from "./ingest-opendota.js";
 
 export interface FormatStage {
@@ -17,8 +18,15 @@ export interface FormatSeries {
   key: string; stage: number; group?: string; label: string; side?: "group" | "upper" | "lower" | "final";
   round?: number; bo: 1 | 2 | 3 | 5; teams?: [string | null, string | null]; at?: string; win?: string; lose?: string;
 }
+/** Турнир целиком из регламента — для турниров, которых нет в сидах (рейтинговые TI, Wallachia… и будущие). */
+export interface FormatTournament {
+  name: string; opendota_league_id: number; organizer: { slug: string; name: string };
+  status: "announced" | "open" | "live" | "finished"; tier?: number; location?: string; prize_usd?: number;
+  /** false — турнир только для рейтинга игроков (docs/12), без фэнтези: пул без цен */
+  fantasy: boolean; ruleset?: string;
+}
 export interface TournamentFormat {
-  slug: string; source: string; utc_offset: string; stages: FormatStage[]; series: FormatSeries[];
+  slug: string; source: string; utc_offset: string; tournament?: FormatTournament; stages: FormatStage[]; series: FormatSeries[];
   standings?: Record<string, { place?: number; out_after?: number }>;
 }
 export interface FormatResult { stages: number; groups: number; matched: number; adopted: number; created: number; unplaced: string[] }
@@ -41,9 +49,10 @@ export function loadFormat(slug: string, file?: string): TournamentFormat {
 }
 
 export async function applyFormat(db: Db, f: TournamentFormat): Promise<FormatResult> {
-  const [tour] = await db.select().from(s.tournaments).where(eq(s.tournaments.slug, f.slug));
-  if (!tour) throw new Error(`турнир ${f.slug} не найден`);
   const at = (d: string, time = "00:00:00") => new Date(`${d}T${time}${f.utc_offset}`);
+  if (f.tournament) await upsertTournament(db, f, at);
+  const [tour] = await db.select().from(s.tournaments).where(eq(s.tournaments.slug, f.slug));
+  if (!tour) throw new Error(`турнир ${f.slug} не найден (нет в сидах и нет блока tournament в регламенте)`);
 
   const tags = new Set<string>([...f.series.flatMap((x) => x.teams ?? []), ...f.stages.flatMap((st) => Object.values(st.groups ?? {}).flat()),
     ...Object.keys(f.standings ?? {})].filter((t): t is string => !!t));
@@ -122,12 +131,19 @@ export async function applyFormat(db: Db, f: TournamentFormat): Promise<FormatRe
       await tx.update(s.series).set({ nextWinSeriesId: x.win ? seriesId.get(x.win)! : null, nextLoseSeriesId: x.lose ? seriesId.get(x.lose)! : null })
         .where(eq(s.series.id, seriesId.get(x.key)!));
 
-    // сыгранные серии, которым в регламенте не нашлось узла — их надо разметить руками (дописать узел в файл)
-    res.unplaced = (await tx.execute<{ label: string }>(sql`
+    // сыгранные серии, которым в регламенте не нашлось узла — их надо разметить руками (дописать узел в файл).
+    // Регламент без сетки (рейтинговый турнир: только стадии) — серии раскладываются по стадиям по времени, без узлов.
+    if (f.series.length) res.unplaced = (await tx.execute<{ label: string }>(sql`
       select coalesce(ta.tag, '?') || '–' || coalesce(tb.tag, '?') || ' ' || to_char(sr.started_at at time zone 'UTC', 'DD.MM HH24:MI UTC')
         || ' (серия ' || sr.id || ')' as label
       from series sr left join teams ta on ta.id = sr.team_a_id left join teams tb on tb.id = sr.team_b_id
       where sr.tournament_id = ${tour.id} and sr.bracket_key is null order by sr.started_at`)).rows.map((r) => r.label);
+
+    // без сетки серии уже лежат в стадиях по времени карт (ingest), но стадии могли переопределить — переложить по окнам
+    if (!f.series.length) await tx.execute(sql`
+      update series sr set stage_id = st.id from stages st
+      where sr.tournament_id = ${tour.id} and st.tournament_id = ${tour.id}
+        and sr.started_at between st.starts_at and st.ends_at and sr.stage_id <> st.id`);
 
     // счёт — заново из карт (порядок команд в узле мог поменяться); дедлайн стадии = начало первой карты (02 §2),
     // до игр — время первой серии по расписанию или явный deadline из файла
@@ -146,4 +162,23 @@ export async function applyFormat(db: Db, f: TournamentFormat): Promise<FormatRe
     }
     return res;
   });
+}
+
+/** Турнир из блока tournament регламента: создать или обновить, плюс ссылка на лигу OpenDota (по ней ingest берёт карты).
+ *  Конфиг турнира дополняется (fantasy, note), а не затирается — у турниров из сидов там правила Классики. */
+async function upsertTournament(db: Db, f: TournamentFormat, at: (d: string, time?: string) => Date) {
+  const t = f.tournament!;
+  const [org] = await db.insert(s.organizers).values({ name: t.organizer.name, slug: t.organizer.slug })
+    .onConflictDoUpdate({ target: s.organizers.slug, set: { name: t.organizer.name } }).returning({ id: s.organizers.id });
+  const version = t.ruleset ?? "2026.10-spec";
+  const [rs] = await db.select({ id: s.scoringRulesets.id }).from(s.scoringRulesets).where(eq(s.scoringRulesets.version, version));
+  if (!rs) throw new Error(`нет правил очков ${version} (pnpm db:seed)`);
+  const first = f.stages.reduce((a, b) => (a.from < b.from ? a : b)), last = f.stages.reduce((a, b) => (a.to > b.to ? a : b));
+  const cfg = { fantasy: t.fantasy, note: `регламент: ${f.source}` };
+  const v = { name: t.name, organizerId: org!.id, tier: t.tier ?? 1, location: t.location ?? null, prizePoolUsd: t.prize_usd ?? null,
+    startsAt: at(first.from), endsAt: at(last.to, "23:59:59"), status: t.status };
+  const [row] = await db.insert(s.tournaments).values({ slug: f.slug, ...v, isLeagueRound: false, scoringRulesetId: rs.id, config: cfg })
+    .onConflictDoUpdate({ target: s.tournaments.slug, set: { ...v, config: sql`${s.tournaments.config} || ${JSON.stringify(cfg)}::jsonb` } })
+    .returning({ id: s.tournaments.id });
+  await addRef(db, "league", row!.id, "opendota", t.opendota_league_id, `https://www.opendota.com/leagues/${t.opendota_league_id}`);
 }

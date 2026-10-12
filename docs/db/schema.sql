@@ -243,7 +243,7 @@ CREATE TABLE "tournament_players" (
   "position" smallint NOT NULL,
   "is_active" boolean NOT NULL,
   "start_rating" numeric(5,2),
-  "start_price" numeric(4,1) NOT NULL
+  "start_price" numeric(4,1)
 );
 
 CREATE TABLE "player_prices" (
@@ -822,7 +822,7 @@ COMMENT ON COLUMN "tournament_players"."is_active" IS 'false — стендин 
 
 COMMENT ON COLUMN "tournament_players"."start_rating" IS 'внутренний, не показываем';
 
-COMMENT ON COLUMN "tournament_players"."start_price" IS '4.5–12.5';
+COMMENT ON COLUMN "tournament_players"."start_price" IS '4.5–12.5; null — турнир только для рейтинга, без фэнтези';
 
 COMMENT ON TABLE "player_prices" IS 'Цена на начало стадии';
 

@@ -2,3 +2,4 @@
 export * from "./scoring/ruleset.js";
 export * from "./scoring/points.js";
 export * from "./pricing.js";
+export * from "./positions.js";

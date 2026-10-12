@@ -3,10 +3,12 @@
 //   pnpm --filter @df/worker cli score  blast-slam-8 [--rulesets 2026.10-spec,2026.10-b]
 //   pnpm --filter @df/worker cli report blast-slam-8
 //   pnpm --filter @df/worker cli format blast-slam-8 [--file путь.json]   регламент: стадии, группы, сетка, итог (packages/db/tournaments/)
+//   pnpm --filter @df/worker cli pool   ti-2026      пул по картам (позиции по линии и net worth); у турнира с заявкой — только сверка
 import { createDb } from "@df/db";
 import { sql } from "drizzle-orm";
 import { applyFormat, loadFormat } from "./jobs/apply-format.js";
 import { ingestOpenDota } from "./jobs/ingest-opendota.js";
+import { buildPool } from "./jobs/pool.js";
 import { scoreTournament } from "./jobs/score.js";
 
 const [cmd, slug] = process.argv.slice(2);
@@ -27,6 +29,20 @@ try {
       left join series sr on sr.stage_id = st.id left join maps m on m.series_id = sr.id
       group by st.id order by st.idx`);
     console.table(st.rows);
+  } else if (cmd === "pool") {
+    const r = await buildPool(db, slug);
+    const reg = r.rows.filter((x) => x.registered != null);
+    if (reg.length) {
+      const bad = reg.filter((x) => x.position !== x.registered);
+      console.log(`сверка с заявкой: совпало ${reg.length - bad.length} из ${reg.length}`);
+      if (bad.length) console.table(bad.map((x) => ({ игрок: x.nickname, команда: x.team, заявка: x.registered, по_картам: x.position, карт: x.maps, доля: x.share.toFixed(2) })));
+    }
+    if (r.written) console.log(`пул записан: ${r.written} игроков`);
+    const unsure = r.rows.filter((x) => x.share < 0.7);
+    if (unsure.length) {
+      console.log(`позиция неуверенная (меньше 70% карт на одной позиции) — проверить по Liquipedia:`);
+      console.table(unsure.map((x) => ({ игрок: x.nickname, команда: x.team, позиция: x.position, карт: x.maps, доля: x.share.toFixed(2) })));
+    }
   } else if (cmd === "ingest") {
     const r = await ingestOpenDota(db, slug, { force: flag("--force"), requestParse: flag("--request-parse"), log: (m) => console.log(m) });
     console.log(`карт ${r.seen}, обновлено ${r.changed}, разобрано ${r.parsed}, заказан разбор ${r.requested}`);
