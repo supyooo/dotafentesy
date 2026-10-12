@@ -44,6 +44,8 @@ docs/08-stack.md          стек (TypeScript/NestJS/Postgres+Drizzle/Redis+Bul
 docs/09-database.md       ER-модель: домены, таблицы, принципы; docs/db/ — schema.dbml (источник правды), schema.sql (DDL), gen.py
 docs/10-prototype-infra.md оформления турниров, данные, заставка, хостинг, скрипты прототипа
 docs/11-backend-structure.md предложение: монорепо (apps/api, apps/worker, packages/domain|db|contracts|sources), миграции Drizzle — на согласовании
+docs/12-player-rating.md  рейтинг игрока (публичный, до 99): уровень игры по позиции и исходу карты, цепочка TI 2026 → Wallachia → Slam
+packages/db/tournaments/  регламенты турниров (стадии, группы, сетка, итог) — готовятся руками до старта, `cli format <slug>`
 apps/, packages/          бэкенд: api (NestJS Fastify), worker (джобы), domain (правила), db (Drizzle), sources (OpenDota)
 spikes/live-source/       спайк данных Slam VIII (TypeScript, tsx): final.ts (OpenDota → очки по спеке по уровням), live.ts (Steam, нужен ключ), REPORT.md
 models/                   Excel-модель распределения по лигам (+ build.py, которым она собрана)
@@ -62,10 +64,16 @@ Rails из ранних заметок отменён (в `docs/06` раздел
 Решения 06.10: мини-лиги в миграции не включать; хостинг — позже (аудитория российская → ПДн в РФ).
 Сделано 06.10: B0–B2 — монорепо pnpm (`apps/api`, `apps/worker`, `packages/domain|db|sources`), 54 таблицы, сиды, сбор и очки Slam VIII
 (см. README и `docs/11`). Postgres — портативный в `%LOCALAPPDATA%\df-tools` (Docker/WSL нет, нужны права админа), Redis отложен.
-Скоринг `2026.10-b` (калибровка Slam VIII) — черновик, ждёт решения Georgy (docs/07).
+Решения 12.10 (docs/07, 02 §5–6, docs/12): очки игрока за серию — как у BLAST (среднее за карты + бонус за победу в серии);
+длительность карты в очках не учитывается; лечения нет; веса очков — по позициям (4 и 5 раздельно), на калибровке; рейтинг игрока
+публичный (docs/12); цена = рейтинг + сила команды, пересчёт после каждой стадии. Черновик `2026.10-b` снят.
+Slam VIII размечен по Liquipedia (`packages/db/tournaments/blast-slam-8.json`): 4 стадии, 34 узла сетки.
+Машина Georgy с 12.10 (старая в ремонте): всё в `D:\dev` (диск C почти полный) — tools, кэши, Postgres `D:\dev\pgdata`
+(`D:\dev\db-start.cmd`), проект `D:\dev\projects\dotafentesy`.
 
 ## Данные
-- **OpenDota** без ключа: BLAST Slam VIII `leagueid=19102` (идёт сейчас, 29 сен – 11 окт — полигон для проверки пайплайна), BLAST Slam IX `leagueid=20208`.
+- **OpenDota** без ключа: BLAST Slam VIII `leagueid=19102` (29 сен – 11 окт, прошёл — полигон пайплайна), BLAST Slam IX `leagueid=20208`,
+  для рейтинга: The International 2026 `19719` (147 карт), PGL Wallachia S9 `20279` (114 карт).
   `/leagues/{id}/matches`, `/matches/{id}`, `/request/{id}` (разбор реплея, 5–15 мин), `/proPlayers`.
 - Игроков сопоставлять **только по account_id**. Проверенные: Yatoro 321580662, Larl 106305042, Batyuk 140835095, not me 218231587, rue 847565596.
   В `prototype/data/players.json` account_id есть у 80/81 (нет только у Timado — вне составов); Yandex сменили ники (aliases).
