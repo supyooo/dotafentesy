@@ -1645,7 +1645,7 @@ function renderRulesReal(R){const sc=R.scoring,w=sc.weights,L=[['Убийств�
   <li><b>Рейтинг</b> — уровень игры на своей позиции: статистика в минуту против обычной для той же позиции в том же исходе карты. Средний игрок тир-1 — 80, максимум 99. Отправная точка — The International 2026, дальше обновляется после каждой стадии.</li>
   <li><b>Цена</b> — рейтинг плюс сила команды (шанс выиграть карту): при одинаковом рейтинге игрок сильной команды дороже. Пересчитывается после каждой стадии; у выбывших — замораживается. Версия v1 — для тестов.</li>
   <li>Пять игроков, по одному на позицию, бюджет ${BUDGET}.0, не больше ${MAX_TEAM} из одной команды. Капитан ×2. Между стадиями ${FREE_TR} трансфер бесплатно, каждый следующий −${TR_COST} очка.</li></ul>
-  <p class="note">Матчи, статистика и очки — настоящие (BLAST Slam VIII, OpenDota). ${esc(R.rules)}</p></div>`}
+  <p class="note">Матчи, статистика и очки — настоящие (BLAST Slam VIII, OpenDota). ${esc(R.rules)}</p></div>${pkRules()}`}
 function renderRules(){if(RP())return renderRulesReal(RP());const rows=[['Убийство',SC.k],['Смерть',SC.d],['Помощь',SC.a],['Добивание',SC.lh],['GPM (за единицу)',SC.gpm],['Уничтоженная вышка',SC.tow],['Рошан',SC.rosh],['Первая кровь',SC.fb],['Секунда оглушения',SC.stun],['Observer Ward',SC.obs],['Стак крипов',SC.stack],['Победа на карте',SC.win]];
   $('panel-rules').innerHTML=`<div class="grid2"><div class="card"><h3>Очки за карту</h3><div class="tbox" style="border:0"><table><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]>0?'+':''}${r[1]}</td></tr>`).join('')}</tbody></table></div>
   <p class="note">Очки считаются за каждую карту, суммируются за стадию и умножаются на коэффициент позиции.</p></div>
@@ -1658,7 +1658,8 @@ function renderRules(){if(RP())return renderRulesReal(RP());const rows=[['Уби
   <li>Цены от 4.5 до 12.5 по выгнутой шкале: звёзды — премиум, середина дешевле. Пятёрка лучших по позициям в бюджет не влезает.</li>
   <li>После каждой стадии цены и рейтинги меняются. Цена: +0.5 за 12+ очков за карту, −0.5 за 8 и меньше, ещё −0.5, если команда вылетела. Рейтинг: до ±3 за стадию по очкам за карту.</li>
   <li>Продаёшь по текущей цене: подорожавший игрок приносит прибыль в банк, её можно потратить в следующем окне.</li></ul></div>
-  <div class="card"><h3>Прогнозы и медали</h3><ul class="plain"><li>Серия: +1 за победителя, ещё +1 за точный счёт. Выход из группы: +1 за каждую угаданную команду. Финал верхней сетки и чемпион: +2.</li><li>Прогнозы стадии закрываются с её стартом. Пустой прогноз — 0 баллов.</li><li>Максимум за турнир — ${PK_MAX}. Медаль от доли максимума: ${PK_MED.map(m=>m[0].toLowerCase()+' от '+Math.round(m[2]*100)+'%').join(', ')}.</li><li>Прогнозы не дают очков фэнтези и не влияют на лигу сезона.</li></ul></div>`}
+  ${pkRules()}`}
+const pkRules=()=>`<div class="card"><h3>Прогнозы и медали</h3><ul class="plain"><li>Каждый матч турнира: +1 за победителя, ещё +1 за точный счёт. Дальние матчи стадии — матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал — прогнозируются сразу, по твоим же прогнозам на предыдущие матчи, как в сетке; точный счёт засчитывается, если угадана и пара.</li><li>Выход из группы: +1 за каждую угаданную команду.</li><li>Прогнозы стадии закрываются с её стартом. Пустой прогноз — 0 баллов.</li><li>Максимум за турнир — ${PK_MAX}. Медаль от доли максимума: ${PK_MED.map(m=>m[0].toLowerCase()+' от '+Math.round(m[2]*100)+'%').join(', ')}.</li><li>Прогнозы не дают очков фэнтези и не влияют на лигу сезона.</li></ul></div>`;
 
 // ---------- навигация
 const VIEWS={
@@ -1771,24 +1772,44 @@ function allRows(){const W=world(),pp=past();const rows=W.bots.map((b,i)=>({name
 function allRank(){const rows=allRows();return{rank:rows.findIndex(x=>x.me)+1,n:rows.length,rows}}
 // ---------- прогнозы: вопросы по стадиям, баллы, медаль за долю от максимума турнира
 const PK_MED=[['Бронза','Б',.55,'#B97A43'],['Серебро','С',.65,'#A9B0B5'],['Золото','З',.72,'#D9AE3A'],['Платина','П',.80,'#8FD6DA']];
-const PK_MAX=42; // 24 группы + 8 посев + 6 плей-офф + 4 финал
+// Прогноз на каждый матч турнира (решение 12.10.2026): +1 победитель, +1 точный счёт. Пары дальних матчей стадии
+// (матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал) — из твоих же прогнозов на предыдущие матчи,
+// как в сетке-прогнозе; сверяется по месту в сетке (slot = номер серии в логе стадии). Точный счёт засчитывается,
+// только если угадана и пара. Плюс «выйдут из группы»: +1 за каждую угаданную команду.
+const PK_MAX=76; // группы 4×(5 матчей×2 + 2) = 48 · посев и Last Chance 4×2 = 8 · плей-офф 8×2 = 16 · финальный день 2×2 = 4
 const PKV={stage:null};
 const byStr=a=>a.slice().sort((x,y)=>STR[y]-STR[x]);
-function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],ser=(a,b,round,i)=>Q.push({id:`s${k}-${i}`,k,type:'ser',a,b,round,max:2});
-  if(k===0){let i=0;for(const g in GROUPS){const[t1,t2,t3,t4]=GROUPS[g];ser(t1,t4,'Группа '+g,i++);ser(t2,t3,'Группа '+g,i++)}
+function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],pk=S.pk||{};
+  const ser=(id,a,b,round,slot,bo)=>{const q={id,k,type:'ser',a:a??null,b:b??null,round,slot,bo:bo||3,max:2,cond:false};Q.push(q);return q};
+  // прогноз на матч q: победитель и проигравший — если победитель выбран из пары этого матча
+  const pw=q=>{const a=pk[q.id];return a&&a.w!=null&&(a.w===q.a||a.w===q.b)?a.w:null};
+  const pl=q=>{const w=pw(q);return w==null?null:w===q.a?q.b:q.a};
+  const cond=q=>{q.cond=true;return q};
+  if(k===0){let gi=0;for(const g in GROUPS){const[t1,t2,t3,t4]=GROUPS[g],o=gi*5;
+      const m1=ser(`s0-${2*gi}`,t1,t4,'Группа '+g,o),m2=ser(`s0-${2*gi+1}`,t2,t3,'Группа '+g,o+1);
+      const w=cond(ser('w0-'+g,pw(m1),pw(m2),'Группа '+g+' · матч победителей',o+2)),l=cond(ser('l0-'+g,pl(m1),pl(m2),'Группа '+g+' · матч проигравших',o+3));
+      cond(ser('d0-'+g,pl(w),pw(l),'Группа '+g+' · решающий',o+4));gi++}
     for(const g in GROUPS)Q.push({id:'g0-'+g,k,type:'two',opts:GROUPS[g],title:'Выйдут из группы '+g,max:2})}
-  else if(k===1){if(!C.first)return Q;const f=C.first,s=C.second;ser(f.A,f.D,'Посев',0);ser(f.B,f.C,'Посев',1);ser(s.A,s.D,'Last Chance',2);ser(s.B,s.C,'Last Chance',3)}
-  else if(k===2){if(!C.qf)return Q;ser(C.qf[0][0],C.qf[0][1],'Верхняя сетка · 1/4',0);ser(C.qf[1][0],C.qf[1][1],'Верхняя сетка · 1/4',1);
-    Q.push({id:'ubf',k,type:'one',opts:byStr([C.ubsf[0],C.ubsf[1],...C.qf.flat()]),title:'Выиграет финал верхней сетки',max:2})}
-  else{if(!C.lbf)return Q;ser(C.lbf[0],C.lbf[1],'Финал нижней сетки',0);Q.push({id:'champ',k,type:'one',opts:byStr([C.gfA,C.lbf[0],C.lbf[1]]),title:'Чемпион турнира',max:2})}
+  else if(k===1){if(!C.first)return Q;const f=C.first,s=C.second;
+    ser('s1-0',f.A,f.D,'Посев',0);ser('s1-1',f.B,f.C,'Посев',1);ser('s1-2',s.A,s.D,'Last Chance',2);ser('s1-3',s.B,s.C,'Last Chance',3)}
+  else if(k===2){if(!C.qf)return Q;
+    const q1=ser('s2-0',C.qf[0][0],C.qf[0][1],'Верхняя сетка · 1/4',0),q2=ser('s2-1',C.qf[1][0],C.qf[1][1],'Верхняя сетка · 1/4',1);
+    const f1=cond(ser('sf2-0',C.ubsf[0],pw(q2),'Верхняя сетка · 1/2',2)),f2=cond(ser('sf2-1',C.ubsf[1],pw(q1),'Верхняя сетка · 1/2',3));
+    const b1=cond(ser('lb2-0',pl(q1),pl(f1),'Нижняя сетка · раунд 1',4)),b2=cond(ser('lb2-1',pl(q2),pl(f2),'Нижняя сетка · раунд 1',5));
+    cond(ser('lbs2',pw(b1),pw(b2),'Нижняя сетка · 1/2',6));cond(ser('ubf',pw(f1),pw(f2),'Финал верхней сетки',7))}
+  else{if(!C.lbf)return Q;const lf=ser('s3-0',C.lbf[0],C.lbf[1],'Финал нижней сетки',0);cond(ser('champ',C.gfA,pw(lf),'Гранд-финал',1,5))}
   return Q}
+// итог матча — по месту в сетке (номер серии в логе стадии), а не по паре: пара дальнего матча могла не совпасть с прогнозом
 function pkResolve(q,R,C){if(!R)return null;
-  if(q.type==='ser'){const x=R.log.find(l=>l.a===q.a&&l.b===q.b);return x?{w:x.wa>x.wb?x.a:x.b,sc:Math.max(x.wa,x.wb)+':'+Math.min(x.wa,x.wb)}:null}
+  if(q.type==='ser'){const x=R.log[q.slot];return x?{w:x.wa>x.wb?x.a:x.b,sc:Math.max(x.wa,x.wb)+':'+Math.min(x.wa,x.wb),pair:[x.a,x.b]}:null}
   if(q.type==='two')return{set:q.opts.filter(t=>R.aliveAfter.has(t))};
   return{w:q.id==='ubf'?C.gfA:C.champ}}
-function pkScore(q,a,res){if(!a||!res)return 0;if(q.type==='ser')return a.w===res.w?1+(a.sc===res.sc?1:0):0;
+const pkPick=(q,a)=>a&&a.w!=null&&(a.w===q.a||a.w===q.b)?a.w:null; // победитель выбран из пары матча (пара могла смениться)
+const pkScores=q=>q.bo===5?['3:0','3:1','3:2']:['2:0','2:1'];
+function pkScore(q,a,res){if(!a||!res)return 0;
+  if(q.type==='ser'){const w=pkPick(q,a);if(w==null||w!==res.w)return 0;const same=res.pair.every(t=>t===q.a||t===q.b);return 1+(same&&a.sc===res.sc?1:0)}
   if(q.type==='two')return(a.set||[]).filter(t=>res.set.includes(t)).length;return a.w===res.w?2:0}
-const pkFilled=(q,a)=>!!a&&(q.type==='ser'?a.w!=null&&!!a.sc:q.type==='two'?(a.set||[]).length===2:a.w!=null);
+const pkFilled=(q,a)=>!!a&&(q.type==='ser'?pkPick(q,a)!=null&&!!a.sc:q.type==='two'?(a.set||[]).length===2:a.w!=null);
 const pkMedalOf=sh=>{let m=-1;PK_MED.forEach((x,i)=>{if(sh>=x[2]-1e-9)m=i});return m};
 const pkNeed=i=>Math.ceil(PK_MAX*PK_MED[i][2]-1e-9);
 function pkStats(){const pk=S.pk||{};let earned=0,settled=0,open=0,filled=0;
@@ -1800,12 +1821,12 @@ function pkMedalSvg(i,sz,lock){sz=sz||40;const m=PK_MED[i];
   return`<svg class="pk-medal" width="${sz}" height="${Math.round(sz*1.3)}" viewBox="0 0 40 52" aria-label="${m[0]}${lock?' — не получена':''}" role="img"><path d="M11 0h8l-3 17h-8zM21 0h8l3 17h-8z" fill="${lock?'var(--line)':'var(--ink)'}"/><circle cx="20" cy="33" r="16" fill="${lock?'none':m[3]}" stroke="${lock?'var(--line)':'rgba(0,0,0,.35)'}" stroke-width="${lock?2:1}" ${lock?'stroke-dasharray="3 3"':''}/><circle cx="20" cy="33" r="11.5" fill="none" stroke="${lock?'var(--line)':'rgba(0,0,0,.28)'}" stroke-width="1.4"/><text x="20" y="38.5" text-anchor="middle" font-family="var(--display)" font-size="14" font-weight="800" fill="${lock?'var(--muted)':'rgba(0,0,0,.66)'}">${m[1]}</text></svg>`}
 const pkSw=t=>TEAMS[t].logo?`<span class="tlogo"><img src="${TEAMS[t].logo}" alt="" decoding="async"></span>`:`<i class="pk-sw" style="background:hsl(${HUE[t]} 55% 46%)"></i>`;
 function pkCard(q,edit,res){const a=(S.pk||{})[q.id]||{},got=res?pkScore(q,a,res):0,miss=res&&a.w==null&&!(a.set&&a.set.length);
-  const head=`<div class="pk-qh"><span class="pf-lab">${esc(q.type==='ser'?q.round+' · Bo3':q.title)}</span><span class="pf-lab">${res?`<b class="pk-got ${got?'ok':''}">${miss?'нет прогноза · 0':got?'+'+got:'0'} из ${q.max}</b>`:q.type==='ser'?'+1 победитель · +1 точный счёт':q.type==='two'?'+1 за каждую угаданную':'+2 за точный выбор'}</span></div>`;
+  const head=`<div class="pk-qh"><span class="pf-lab">${esc(q.type==='ser'?q.round+' · Bo'+q.bo:q.title)}</span><span class="pf-lab">${res?`<b class="pk-got ${got?'ok':''}">${miss?'нет прогноза · 0':got?'+'+got:'0'} из ${q.max}</b>`:q.type==='ser'?'+1 победитель · +1 точный счёт':q.type==='two'?'+1 за каждую угаданную':'+2 за точный выбор'}</span></div>`;
   const tb=(t,on,attr,mark)=>`<button type="button" class="pk-tm ${mark||''}" aria-pressed="${on}" ${edit?attr:'disabled'}>${pkSw(t)}<span>${esc(tn(t))}</span></button>`;
   let body='';
   if(q.type==='ser'){const mk=t=>res?(t===res.w?'pk-win':''):'';
     body=`<div class="pk-pair">${tb(q.a,a.w===q.a,`data-pk="${q.id}" data-pk-w="${q.a}"`,mk(q.a))}<span class="pk-vs">${res?res.sc.split(':')[res.w===q.a?0:1]+':'+res.sc.split(':')[res.w===q.a?1:0]:'vs'}</span>${tb(q.b,a.w===q.b,`data-pk="${q.id}" data-pk-w="${q.b}"`,mk(q.b))}</div>
-    ${res?`<div class="pk-sc"><span class="pf-lab">Твой прогноз</span><span>${a.w!=null?esc(TEAMS[a.w].tag)+' '+(a.sc||'—'):'—'}</span><span class="pf-lab">Итог</span><span>${esc(TEAMS[res.w].tag)} ${res.sc}</span></div>`:`<div class="pk-sc"><span class="pf-lab">Счёт</span>${['2:0','2:1'].map(sc=>`<button type="button" class="pf-chip" aria-pressed="${a.sc===sc}" ${edit&&a.w!=null?`data-pk="${q.id}" data-pk-sc="${sc}"`:'disabled'}>${a.w!=null?esc(TEAMS[a.w].tag)+' ':''}${sc}</button>`).join('')}</div>`}`}
+    ${res?`<div class="pk-sc"><span class="pf-lab">Твой прогноз</span><span>${a.w!=null?esc(TEAMS[a.w].tag)+' '+(a.sc||'—'):'—'}</span><span class="pf-lab">Итог</span><span>${esc(TEAMS[res.w].tag)} ${res.sc}</span></div>`:`<div class="pk-sc"><span class="pf-lab">Счёт</span>${pkScores(q).map(sc=>`<button type="button" class="pf-chip" aria-pressed="${a.sc===sc}" ${edit&&a.w!=null?`data-pk="${q.id}" data-pk-sc="${sc}"`:'disabled'}>${a.w!=null?esc(TEAMS[a.w].tag)+' ':''}${sc}</button>`).join('')}</div>`}`}
   else{const set=q.type==='two'?(a.set||[]):[a.w];
     body=`<div class="pk-opts">${q.opts.map(t=>tb(t,set.includes(t),`data-pk="${q.id}" data-pk-t="${t}"`,res?((q.type==='two'?res.set.includes(t):res.w===t)?'pk-win':''):'')).join('')}</div>`}
   return`<div class="pk-q ${res?'pk-res':''}">${head}${body}</div>`}
@@ -1818,42 +1839,47 @@ function pkClick(b){const id=b.dataset.pk,k=S.played,q=pkQuestions(k).find(x=>x.
 const bkTeam=t=>t==null?null:{n:TEAMS[t].name,logo:TEAMS[t].logo};
 // узел сетки: o={k,label,a,b,pa,pb,q,log,ghostA,ghostB}; q — вопрос-серия, если её можно прогнозировать
 function bkNode(o,sel){const pk=S.pk||{},q=o.q,a=q?pk[q.id]||{}:{},edit=q&&q.k===S.played&&S.played<4,
-    res=q&&o.log?pkResolve(q,RES[q.k],CTX):null,hl=o.k===sel,lg=o.log,A=lg?lg.a:o.a,B=lg?lg.b:o.b;
+    res=q&&o.log?pkResolve(q,RES[q.k],CTX):null,hl=o.k===sel,lg=o.log,A=lg?lg.a:o.a,B=lg?lg.b:o.b,aw=q?pkPick(q,a):null;
   const win=lg?(lg.wa>lg.wb?lg.a:lg.b):null;
-  const row=(t,ph,ghost,sc)=>{const T=t!=null?TEAMS[t]:null,picked=q&&a.w!=null&&a.w===t,cls=['bk-t',lg&&t===win?'win':'',picked?'pick':'',ghost?'ghost':'',lg&&t!==win?'lose':''].join(' ');
+  const row=(t,ph,ghost,sc)=>{const T=t!=null?TEAMS[t]:null,picked=q&&aw!=null&&aw===t,cls=['bk-t',lg&&t===win?'win':'',picked?'pick':'',ghost?'ghost':'',lg&&t!==win?'lose':''].join(' ');
     const inner=`${T&&T.logo?`<span class="tlogo"><img src="${T.logo}" alt="" decoding="async"></span>`:`<span class="tlogo bk-empty"></span>`}<span class="bk-n">${T?esc(T.name):esc(ph||'—')}${ghost?' <i>твой прогноз</i>':''}</span>${sc!=null?`<b class="num">${sc}</b>`:picked&&!lg?'<b class="bk-mark">✓</b>':''}`;
     return edit&&t!=null?`<button type="button" class="${cls}" aria-pressed="${picked}" data-pk="${q.id}" data-pk-w="${t}">${inner}</button>`:`<div class="${cls}">${inner}</div>`};
   const scA=lg?lg.wa:null,scB=lg?lg.wb:null;
   let foot='';
-  if(edit)foot=`<div class="bk-sc">${['2:0','2:1'].map(sc=>`<button type="button" class="pf-chip" aria-pressed="${a.sc===sc}" ${a.w!=null?`data-pk="${q.id}" data-pk-sc="${sc}"`:'disabled'}>${a.w!=null?esc(TEAMS[a.w].tag)+' ':''}${sc}</button>`).join('')}</div>`;
+  if(edit)foot=(q.a==null||q.b==null)?`<div class="bk-foot">сначала спрогнозируй предыдущие матчи</div>`
+    :`<div class="bk-sc">${pkScores(q).map(sc=>`<button type="button" class="pf-chip" aria-pressed="${a.sc===sc}" ${aw!=null?`data-pk="${q.id}" data-pk-sc="${sc}"`:'disabled'}>${aw!=null?esc(TEAMS[aw].tag)+' ':''}${sc}</button>`).join('')}</div>`;
   else if(res){const got=pkScore(q,a,res);foot=`<div class="bk-foot ${got?'ok':''}">${a.w!=null?'твой: '+esc(TEAMS[a.w].tag)+' '+(a.sc||''):'нет прогноза'} · <b>${got?'+'+got:'0'}</b></div>`}
   return`<div class="bk-node ${hl?'hl':''} ${edit?'open':''}"><span class="bk-lab">${esc(o.label)}</span>${row(A,o.pa,!lg&&o.ghostA,scA)}${row(B,o.pb,!lg&&o.ghostB,scB)}${foot}</div>`}
 
-function bkGroups(sel){const k=0,Q=pkQuestions(0),pk=S.pk||{},lg=S.played>0?RES[0].log:null;
-  return`<div class="bk-groups">${Object.keys(GROUPS).map((g,gi)=>{const[t1,t2,t3,t4]=GROUPS[g],q1=Q.find(x=>x.id==='s0-'+(2*gi)),q2=Q.find(x=>x.id==='s0-'+(2*gi+1)),qa=Q.find(x=>x.id==='g0-'+g);
-    const L=i=>lg?lg[gi*5+i]:null,w1=(pk[q1.id]||{}).w,w2=(pk[q2.id]||{}).w,lose=(q,w)=>w==null?null:(w===q.a?q.b:q.a);
-    const n=(o)=>bkNode({k,...o},sel);
+function bkGroups(sel){const k=0,Q=pkQuestions(0),lg=S.played>0?RES[0].log:null;
+  return`<div class="bk-groups">${Object.keys(GROUPS).map((g,gi)=>{const[t1,t2,t3,t4]=GROUPS[g],f=id=>Q.find(x=>x.id===id);
+    const q1=f('s0-'+(2*gi)),q2=f('s0-'+(2*gi+1)),qw=f('w0-'+g),ql=f('l0-'+g),qd=f('d0-'+g),qa=f('g0-'+g);
+    const L=i=>lg?lg[gi*5+i]:null,n=(o)=>bkNode({k,...o},sel);
+    // дальние матчи группы: пары — из твоих прогнозов (помечены «твой прогноз»), прогнозировать можно сразу
+    const c=q=>({a:q.a,b:q.b,ghostA:q.a!=null,ghostB:q.b!=null,q});
     const cols=`<div class="bk-gcol"><span class="pf-lab">Стартовые матчи</span>${n({label:'Матч 1',a:t1,b:t4,q:q1,log:L(0)})}${n({label:'Матч 2',a:t2,b:t3,q:q2,log:L(1)})}</div>
-      <div class="bk-gcol"><span class="pf-lab">Дальше</span>${n({label:'Матч победителей',a:w1??null,b:w2??null,ghostA:w1!=null,ghostB:w2!=null,pa:'победитель матча 1',pb:'победитель матча 2',log:L(2)})}${n({label:'Матч проигравших',a:lose(q1,w1),b:lose(q2,w2),ghostA:w1!=null,ghostB:w2!=null,pa:'проигравший матча 1',pb:'проигравший матча 2',log:L(3)})}</div>
-      <div class="bk-gcol"><span class="pf-lab">Решающий</span>${n({label:'За второе место',pa:'проигравший МП',pb:'победитель МПр',log:L(4)})}
+      <div class="bk-gcol"><span class="pf-lab">Дальше</span>${n({label:'Матч победителей',...c(qw),pa:'победитель матча 1',pb:'победитель матча 2',log:L(2)})}${n({label:'Матч проигравших',...c(ql),pa:'проигравший матча 1',pb:'проигравший матча 2',log:L(3)})}</div>
+      <div class="bk-gcol"><span class="pf-lab">Решающий</span>${n({label:'За второе место',...c(qd),pa:'проигравший МП',pb:'победитель МПр',log:L(4)})}
         ${lg?`<div class="bk-out"><span class="pf-lab">Вышли</span><b>1-е · ${esc(tn(CTX.first[g]))}</b><b>2-е · ${esc(tn(CTX.second[g]))}</b></div>`:''}</div>
       <div class="bk-gcol bk-adv">${pkCard(qa,qa.k===S.played&&S.played<4,lg?pkResolve(qa,RES[0],CTX):null)}</div>`;
     return`<section class="bk-group"><div class="bk-gh"><h3>Группа ${g}</h3><span class="pf-lab">GSL · Bo3</span></div><div class="bk-grow">${cols}</div></section>`}).join('')}</div>`}
 
 function bkPlayoff(sel){const C=CTX,L=k=>S.played>k?RES[k].log:null,L1=L(1),L2=L(2),L3=L(3),Q=k=>S.played>=k?pkQuestions(k):[];
   const q=(k,i)=>Q(k).find(x=>x.id===`s${k}-${i}`)||null,f=C.first||{},s=C.second||{},n=o=>bkNode(o,sel);
+  // узел с прогнозом, у которого одна или обе команды — из твоих прогнозов (gA/gB — какая сторона «твой прогноз»)
+  const pn=(k,id,o,gA,gB)=>{const x=Q(k).find(y=>y.id===id)||null;return n(x?{k,...o,a:x.a,b:x.b,ghostA:gA&&x.a!=null,ghostB:gB&&x.b!=null,q:x}:{k,...o})};
   const qf=C.qf||[[null,null],[null,null]],ub=C.ubsf||[null,null],lbf=C.lbf||[null,null];
   const col=(h,inner)=>`<div class="bk-col"><span class="pf-lab">${h}</span>${inner}</div>`,stk=(...c)=>`<div class="bk-stack">${c.join('')}</div>`;
   const board=[
     stk(col('Посев',n({k:1,label:'Посев 1',a:f.A??null,b:f.D??null,pa:'1-е A',pb:'1-е D',q:q(1,0),log:L1&&L1[0]})+n({k:1,label:'Посев 2',a:f.B??null,b:f.C??null,pa:'1-е B',pb:'1-е C',q:q(1,1),log:L1&&L1[1]}))+
     col('Last Chance',n({k:1,label:'Last Chance 1',a:s.A??null,b:s.D??null,pa:'2-е A',pb:'2-е D',q:q(1,2),log:L1&&L1[2]})+n({k:1,label:'Last Chance 2',a:s.B??null,b:s.C??null,pa:'2-е B',pb:'2-е C',q:q(1,3),log:L1&&L1[3]}))),
     stk(col('Верхняя · 1/4',n({k:2,label:'1/4 №1',a:qf[0][0],b:qf[0][1],pa:'проигр. посева 1',pb:'поб. Last Chance 2',q:q(2,0),log:L2&&L2[0]})+n({k:2,label:'1/4 №2',a:qf[1][0],b:qf[1][1],pa:'проигр. посева 2',pb:'поб. Last Chance 1',q:q(2,1),log:L2&&L2[1]}))+
-    col('Нижняя · раунд 1',n({k:2,label:'НС раунд 1 №1',pa:'проигр. 1/4 №1',pb:'проигр. 1/2 №1',log:L2&&L2[4]})+n({k:2,label:'НС раунд 1 №2',pa:'проигр. 1/4 №2',pb:'проигр. 1/2 №2',log:L2&&L2[5]}))),
-    stk(col('Верхняя · 1/2',n({k:2,label:'1/2 №1',a:ub[0],pa:'поб. посева 1',pb:'поб. 1/4 №2',log:L2&&L2[2]})+n({k:2,label:'1/2 №2',a:ub[1],pa:'поб. посева 2',pb:'поб. 1/4 №1',log:L2&&L2[3]}))+
-    col('Нижняя · 1/2',n({k:2,label:'НС 1/2',pa:'поб. НС №1',pb:'поб. НС №2',log:L2&&L2[6]}))),
-    stk(col('Финал верхней',n({k:2,label:'Финал верхней сетки',pa:'поб. 1/2 №1',pb:'поб. 1/2 №2',log:L2&&L2[7]}))+
+    col('Нижняя · раунд 1',pn(2,'lb2-0',{label:'НС раунд 1 №1',pa:'проигр. 1/4 №1',pb:'проигр. 1/2 №1',log:L2&&L2[4]},1,1)+pn(2,'lb2-1',{label:'НС раунд 1 №2',pa:'проигр. 1/4 №2',pb:'проигр. 1/2 №2',log:L2&&L2[5]},1,1))),
+    stk(col('Верхняя · 1/2',pn(2,'sf2-0',{label:'1/2 №1',a:ub[0],pa:'поб. посева 1',pb:'поб. 1/4 №2',log:L2&&L2[2]},0,1)+pn(2,'sf2-1',{label:'1/2 №2',a:ub[1],pa:'поб. посева 2',pb:'поб. 1/4 №1',log:L2&&L2[3]},0,1))+
+    col('Нижняя · 1/2',pn(2,'lbs2',{label:'НС 1/2',pa:'поб. НС №1',pb:'поб. НС №2',log:L2&&L2[6]},1,1))),
+    stk(col('Финал верхней',pn(2,'ubf',{label:'Финал верхней сетки',pa:'поб. 1/2 №1',pb:'поб. 1/2 №2',log:L2&&L2[7]},1,1))+
     col('Финал нижней',n({k:3,label:'Финал нижней сетки',a:lbf[0],b:lbf[1],pa:'проигр. финала ВС',pb:'поб. НС 1/2',q:q(3,0),log:L3&&L3[0]}))),
-    stk(col('Гранд-финал · Bo5',n({k:3,label:'Гранд-финал',a:C.gfA??null,pa:'поб. верхней сетки',pb:'поб. нижней сетки',log:L3&&L3[1]})+
+    stk(col('Гранд-финал · Bo5',pn(3,'champ',{label:'Гранд-финал',a:C.gfA??null,pa:'поб. верхней сетки',pb:'поб. нижней сетки',log:L3&&L3[1]},0,1)+
       (S.played>=4?`<div class="bk-out"><span class="pf-lab">Чемпион</span><b>${esc(tn(C.champ))}</b></div>`:'')))
   ].join('');
   const extra=sel>=1&&sel<=S.played?Q(sel).filter(x=>x.type!=='ser'):[];
