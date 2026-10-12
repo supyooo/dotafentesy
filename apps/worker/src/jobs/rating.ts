@@ -4,8 +4,8 @@
 import { sql } from "drizzle-orm";
 import { type Db } from "@df/db";
 import {
-  baselines, calibrateScale, levelOf, mapZ, pointsPerMinute, RATING_DEFAULT, RULESET_SPEC, updateRating,
-  type Position, type RatingConfig,
+  calibrateScale, clampStep, fitImpactModel, levelOf, mapImpact, RATING_DEFAULT, updateRating,
+  type ImpactModel, type Position, type RatingConfig, type RatingMapStats,
 } from "@df/domain";
 
 const DAY = 86_400_000;
@@ -19,7 +19,7 @@ export interface PlayerRating {
   after: Record<string, number>;
   final: number; fast: string[];
 }
-export interface RatingRun { scale: number; anchor: string; chain: string[]; players: Map<number, PlayerRating>; names: Record<string, string> }
+export interface RatingRun { scale: number; anchor: string; chain: string[]; players: Map<number, PlayerRating>; names: Record<string, string>; model: ImpactModel }
 
 interface Row {
   map_id: number; started: number; duration_s: number; slug: string; t_start: number; stage_idx: number; stage_name: string;
@@ -30,16 +30,23 @@ export interface RatingOptions { anchor?: string; config?: RatingConfig; /** о�
 
 export async function computeRatings(db: Db, opts: RatingOptions = {}): Promise<RatingRun & { levelsBySlug: Map<string, Map<number, { maps: number; level: number }>> }> {
   const anchor = opts.anchor ?? "ti-2026", c = opts.config ?? RATING_DEFAULT;
+  // все показатели игрока на карте + итоги его команды на карте (участие в убийствах, доля net worth)
   const raw = (await db.execute<{
     map_id: number; started: string; duration_s: number; slug: string; t_start: string; stage_idx: number; stage_name: string; t_name: string;
     player_id: number; position: number; won: boolean; kills: number; deaths: number; assists: number; last_hits: number;
-    building_damage: number | null; stun_s: string | null; obs_placed: number | null; obs_killed: number | null; camps_stacked: number | null;
+    gpm: number | null; xpm: number | null; hero_damage: number | null; building_damage: number | null; hero_healing: number | null;
+    stun_s: string | null; obs_placed: number | null; obs_killed: number | null; camps_stacked: number | null;
+    net_worth: number | null; team_kills: string; team_nw: string;
   }>(sql`
+    with st_all as (
+      select pms.*, sum(pms.kills) over (partition by pms.map_id, pms.team_id) team_kills,
+        sum(coalesce(pms.net_worth, 0)) over (partition by pms.map_id, pms.team_id) team_nw
+      from player_map_stats pms)
     select pms.map_id::int, extract(epoch from m.started_at)::float8 * 1000 as started, m.duration_s, t.slug, t.name t_name,
       extract(epoch from t.starts_at)::float8 * 1000 as t_start, st.idx stage_idx, st.name stage_name,
-      pms.player_id::int, tp.position, pms.won, pms.kills, pms.deaths, pms.assists, pms.last_hits, pms.building_damage,
-      pms.stun_s, pms.obs_placed, pms.obs_killed, pms.camps_stacked
-    from player_map_stats pms
+      pms.player_id::int, tp.position, pms.won, pms.kills, pms.deaths, pms.assists, pms.last_hits, pms.gpm, pms.xpm, pms.hero_damage,
+      pms.building_damage, pms.hero_healing, pms.stun_s, pms.obs_placed, pms.obs_killed, pms.camps_stacked, pms.net_worth, pms.team_kills, pms.team_nw
+    from st_all pms
     join maps m on m.id = pms.map_id and m.status = 'finished' and m.data_tier = 'parsed'
     join series sr on sr.id = m.series_id join stages st on st.id = sr.stage_id join tournaments t on t.id = sr.tournament_id
     join tournament_players tp on tp.tournament_id = t.id and tp.player_id = pms.player_id
@@ -47,20 +54,22 @@ export async function computeRatings(db: Db, opts: RatingOptions = {}): Promise<
   const names: Record<string, string> = {};
   for (const r of raw) names[r.slug] = r.t_name;
 
-  // уровень на карте: очки в минуту против обычных для позиции и исхода (по всем загруженным картам)
-  const perf = raw.map((r) => ({
-    position: r.position as Position, won: r.won,
-    ppm: pointsPerMinute({ kills: r.kills, deaths: r.deaths, assists: r.assists, last_hits: r.last_hits, building_damage: r.building_damage,
-      stun_s: r.stun_s == null ? null : Number(r.stun_s), obs_placed: r.obs_placed, obs_killed: r.obs_killed, camps_stacked: r.camps_stacked },
-    r.duration_s, RULESET_SPEC),
+  // v2 (docs/12): оценка карты против всей позиции по широкому набору показателей; веса — связь показателя с победой
+  // на всех загруженных картах (по позициям); результат команды — win_share оценки
+  const stats: RatingMapStats[] = raw.map((r) => ({
+    position: r.position as Position, won: r.won, durationS: r.duration_s,
+    kills: r.kills, deaths: r.deaths, assists: r.assists, last_hits: r.last_hits, gpm: r.gpm ?? 0, xpm: r.xpm ?? 0,
+    hero_damage: r.hero_damage ?? 0, building_damage: r.building_damage ?? 0, healing: r.hero_healing ?? 0, stun_s: Number(r.stun_s ?? 0),
+    obs_placed: r.obs_placed ?? 0, obs_killed: r.obs_killed ?? 0, camps_stacked: r.camps_stacked ?? 0,
+    net_worth: r.net_worth ?? 0, team_kills: Number(r.team_kills), team_net_worth: Number(r.team_nw),
   }));
-  const base = baselines(perf);
-  const rows: Row[] = raw.map((r, i) => ({ ...r, started: Number(r.started), t_start: Number(r.t_start), position: r.position as Position, z: mapZ(perf[i]!, base) }));
+  const model = fitImpactModel(stats, c.win_share);
+  const rows: Row[] = raw.map((r, i) => ({ ...r, started: Number(r.started), t_start: Number(r.t_start), position: r.position as Position, z: mapImpact(stats[i]!, model) }));
 
   const byPlayer = new Map<number, Row[]>();
   for (const r of rows) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const scale = calibrateScale([...byPlayer.values()].map((rs) => ({ n: rs.length, meanZ: mean(rs.map((r) => r.z)) })), c.target_sd);
+  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const scale = calibrateScale([...byPlayer.values()].map((rs) => ({ n: rs.length, meanZ: avg(rs.map((r) => r.z)) })), c.target_sd);
 
   const anchorRows = rows.filter((r) => r.slug === anchor);
   if (!anchorRows.length) throw new Error(`нет карт отправного турнира ${anchor}`);
@@ -102,10 +111,12 @@ export async function computeRatings(db: Db, opts: RatingOptions = {}): Promise<
       const fast = (debut && firstPlayed) || (lastPos != null && pos !== lastPos);
       if (fast) p.fast.push(`${names[slug] ?? slug}: ${debut && firstPlayed ? "дебют" : `позиция ${lastPos}→${pos}`}`);
       const stages = [...new Set(tr.map((r) => r.stage_idx))].sort((a, b) => a - b);
+      const tStart = rating; // v2: за турнир не больше ±max_step (кроме дебюта и новой позиции — там рейтинг ещё ищет уровень)
       for (const idx of stages) {
         const sr = tr.filter((r) => r.stage_idx === idx);
         const lv = level(sr);
         rating = updateRating(rating, lv, sr.length, fast ? c.k_fast : c.k, c);
+        if (!fast) rating = clampStep(rating, tStart, c);
         p.steps.push({ tournament: slug, stage: sr[0]!.stage_name, stageIdx: idx, maps: sr.length, level: lv, rating });
       }
       p.after[slug] = rating; lastPos = pos; firstPlayed = false;
@@ -113,7 +124,7 @@ export async function computeRatings(db: Db, opts: RatingOptions = {}): Promise<
     p.final = rating;
     players.set(playerId, p);
   }
-  return { scale, anchor, chain, players, names, levelsBySlug };
+  return { scale, anchor, chain, players, names, levelsBySlug, model };
 }
 
 /** Насколько рейтинг до турнира предсказывает уровень игры на нём: корреляция по игрокам с ≥ minMaps карт. */

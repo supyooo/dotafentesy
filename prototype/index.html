@@ -1659,7 +1659,7 @@ function renderRules(){if(RP())return renderRulesReal(RP());const rows=[['Уби
   <li>После каждой стадии цены и рейтинги меняются. Цена: +0.5 за 12+ очков за карту, −0.5 за 8 и меньше, ещё −0.5, если команда вылетела. Рейтинг: до ±3 за стадию по очкам за карту.</li>
   <li>Продаёшь по текущей цене: подорожавший игрок приносит прибыль в банк, её можно потратить в следующем окне.</li></ul></div>
   ${pkRules()}`}
-const pkRules=()=>`<div class="card"><h3>Прогнозы и медали</h3><ul class="plain"><li>Каждый матч турнира: +1 за победителя, ещё +1 за точный счёт. Дальние матчи стадии — матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал — прогнозируются сразу, по твоим же прогнозам на предыдущие матчи, как в сетке; точный счёт засчитывается, если угадана и пара.</li><li>Выход из группы: +1 за каждую угаданную команду.</li><li>Прогнозы стадии закрываются с её стартом. Пустой прогноз — 0 баллов.</li><li>Максимум за турнир — ${PK_MAX}. Медаль от доли максимума: ${PK_MED.map(m=>m[0].toLowerCase()+' от '+Math.round(m[2]*100)+'%').join(', ')}.</li><li>Прогнозы не дают очков фэнтези и не влияют на лигу сезона.</li></ul></div>`;
+const pkRules=()=>`<div class="card"><h3>Прогнозы и медали</h3><ul class="plain"><li>Каждый матч турнира: +1 за победителя, ещё +1 за точный счёт. Дальние матчи стадии — матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал — прогнозируются сразу, по твоим же прогнозам на предыдущие матчи, как в сетке; точный счёт засчитывается, если угадана и пара. Кто выходит из группы — видно по прогнозам на её матчи.</li><li>Прогнозы стадии закрываются с её стартом. Пустой прогноз — 0 баллов.</li><li>Максимум за турнир — ${PK_MAX}. Медаль от доли максимума: ${PK_MED.map(m=>m[0].toLowerCase()+' от '+Math.round(m[2]*100)+'%').join(', ')}.</li><li>Прогнозы не дают очков фэнтези и не влияют на лигу сезона.</li></ul></div>`;
 
 // ---------- навигация
 const VIEWS={
@@ -1775,8 +1775,8 @@ const PK_MED=[['Бронза','Б',.55,'#B97A43'],['Серебро','С',.65,'#A
 // Прогноз на каждый матч турнира (решение 12.10.2026): +1 победитель, +1 точный счёт. Пары дальних матчей стадии
 // (матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал) — из твоих же прогнозов на предыдущие матчи,
 // как в сетке-прогнозе; сверяется по месту в сетке (slot = номер серии в логе стадии). Точный счёт засчитывается,
-// только если угадана и пара. Плюс «выйдут из группы»: +1 за каждую угаданную команду.
-const PK_MAX=76; // группы 4×(5 матчей×2 + 2) = 48 · посев и Last Chance 4×2 = 8 · плей-офф 8×2 = 16 · финальный день 2×2 = 4
+// только если угадана и пара. Отдельного вопроса «выйдут из группы» нет — выход виден по прогнозам на матчи группы.
+const PK_MAX=68; // группы 4×5 матчей×2 = 40 · посев и Last Chance 4×2 = 8 · плей-офф 8×2 = 16 · финальный день 2×2 = 4
 const PKV={stage:null};
 const byStr=a=>a.slice().sort((x,y)=>STR[y]-STR[x]);
 function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],pk=S.pk||{};
@@ -1788,8 +1788,7 @@ function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],pk=S.pk||{};
   if(k===0){let gi=0;for(const g in GROUPS){const[t1,t2,t3,t4]=GROUPS[g],o=gi*5;
       const m1=ser(`s0-${2*gi}`,t1,t4,'Группа '+g,o),m2=ser(`s0-${2*gi+1}`,t2,t3,'Группа '+g,o+1);
       const w=cond(ser('w0-'+g,pw(m1),pw(m2),'Группа '+g+' · матч победителей',o+2)),l=cond(ser('l0-'+g,pl(m1),pl(m2),'Группа '+g+' · матч проигравших',o+3));
-      cond(ser('d0-'+g,pl(w),pw(l),'Группа '+g+' · решающий',o+4));gi++}
-    for(const g in GROUPS)Q.push({id:'g0-'+g,k,type:'two',opts:GROUPS[g],title:'Выйдут из группы '+g,max:2})}
+      cond(ser('d0-'+g,pl(w),pw(l),'Группа '+g+' · решающий',o+4));gi++}}
   else if(k===1){if(!C.first)return Q;const f=C.first,s=C.second;
     ser('s1-0',f.A,f.D,'Посев',0);ser('s1-1',f.B,f.C,'Посев',1);ser('s1-2',s.A,s.D,'Last Chance',2);ser('s1-3',s.B,s.C,'Last Chance',3)}
   else if(k===2){if(!C.qf)return Q;
@@ -1853,7 +1852,11 @@ function bkNode(o,sel){const pk=S.pk||{},q=o.q,a=q?pk[q.id]||{}:{},edit=q&&q.k==
 
 function bkGroups(sel){const k=0,Q=pkQuestions(0),lg=S.played>0?RES[0].log:null;
   return`<div class="bk-groups">${Object.keys(GROUPS).map((g,gi)=>{const[t1,t2,t3,t4]=GROUPS[g],f=id=>Q.find(x=>x.id===id);
-    const q1=f('s0-'+(2*gi)),q2=f('s0-'+(2*gi+1)),qw=f('w0-'+g),ql=f('l0-'+g),qd=f('d0-'+g),qa=f('g0-'+g);
+    const q1=f('s0-'+(2*gi)),q2=f('s0-'+(2*gi+1)),qw=f('w0-'+g),ql=f('l0-'+g),qd=f('d0-'+g),pk=S.pk||{};
+    // выход из группы по твоему прогнозу: 1-е — победитель матча победителей, 2-е — победитель решающего
+    const my1=pkPick(qw,pk[qw.id]),my2=pkPick(qd,pk[qd.id]),mark=(t,real)=>!lg||t==null?'':t===real?' <b class="bk-mark">✓</b>':' <span class="muted">✗</span>';
+    const adv=`<div class="bk-out"><span class="pf-lab">Выход из группы · твой прогноз</span><b>1-е · ${my1!=null?esc(tn(my1)):'—'}${mark(my1,lg&&CTX.first[g])}</b><b>2-е · ${my2!=null?esc(tn(my2)):'—'}${mark(my2,lg&&CTX.second[g])}</b>
+      <span class="muted" style="font-size:12px">Считается по прогнозам на матч победителей и решающий — отдельных баллов нет.</span></div>`;
     const L=i=>lg?lg[gi*5+i]:null,n=(o)=>bkNode({k,...o},sel);
     // дальние матчи группы: пары — из твоих прогнозов (помечены «твой прогноз»), прогнозировать можно сразу
     const c=q=>({a:q.a,b:q.b,ghostA:q.a!=null,ghostB:q.b!=null,q});
@@ -1861,7 +1864,7 @@ function bkGroups(sel){const k=0,Q=pkQuestions(0),lg=S.played>0?RES[0].log:null;
       <div class="bk-gcol"><span class="pf-lab">Дальше</span>${n({label:'Матч победителей',...c(qw),pa:'победитель матча 1',pb:'победитель матча 2',log:L(2)})}${n({label:'Матч проигравших',...c(ql),pa:'проигравший матча 1',pb:'проигравший матча 2',log:L(3)})}</div>
       <div class="bk-gcol"><span class="pf-lab">Решающий</span>${n({label:'За второе место',...c(qd),pa:'проигравший МП',pb:'победитель МПр',log:L(4)})}
         ${lg?`<div class="bk-out"><span class="pf-lab">Вышли</span><b>1-е · ${esc(tn(CTX.first[g]))}</b><b>2-е · ${esc(tn(CTX.second[g]))}</b></div>`:''}</div>
-      <div class="bk-gcol bk-adv">${pkCard(qa,qa.k===S.played&&S.played<4,lg?pkResolve(qa,RES[0],CTX):null)}</div>`;
+      <div class="bk-gcol bk-adv">${adv}</div>`;
     return`<section class="bk-group"><div class="bk-gh"><h3>Группа ${g}</h3><span class="pf-lab">GSL · Bo3</span></div><div class="bk-grow">${cols}</div></section>`}).join('')}</div>`}
 
 function bkPlayoff(sel){const C=CTX,L=k=>S.played>k?RES[k].log:null,L1=L(1),L2=L(2),L3=L(3),Q=k=>S.played>=k?pkQuestions(k):[];

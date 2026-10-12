@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baselines, calibrateScale, mapZ, pointsPerMinute, RATING_DEFAULT, updateRating } from "./rating.js";
+import { baselines, calibrateScale, clampStep, fitImpactModel, mapImpact, mapZ, pointsPerMinute, RATING_DEFAULT, updateRating, type RatingMapStats } from "./rating.js";
 import { RULESET_SPEC } from "./scoring/ruleset.js";
 
 describe("рейтинг (docs/12)", () => {
@@ -26,6 +26,27 @@ describe("рейтинг (docs/12)", () => {
     const b = baselines(rows);
     expect(mapZ({ position: 5, won: false, ppm: 0.35 }, b)).toBeGreaterThan(0);
     expect(mapZ({ position: 5, won: true, ppm: 0.35 }, b)).toBeLessThan(0);
+  });
+  it("v2: веса — по связи с победой; сильная игра в поражении выше слабой; победа добавляет", () => {
+    const base: Omit<RatingMapStats, "won" | "kills" | "deaths"> = { position: 1, durationS: 2400, assists: 8, last_hits: 300, gpm: 600, xpm: 650,
+      hero_damage: 20000, building_damage: 3000, healing: 0, stun_s: 10, obs_placed: 0, obs_killed: 0, camps_stacked: 1,
+      net_worth: 20000, team_kills: 25, team_net_worth: 70000 };
+    const rows: RatingMapStats[] = [];
+    for (let i = 0; i < 200; i++) {
+      const won = i % 2 === 0;
+      rows.push({ ...base, won, kills: (won ? 9 : 4) + (i % 5), deaths: (won ? 2 : 6) + (i % 3) });
+    }
+    const m = fitImpactModel(rows, 0.2);
+    expect(m.byPos[1].features.kills.weight).toBeGreaterThan(0);
+    expect(m.byPos[1].features.deaths.weight).toBeLessThan(0);
+    const strongLoss = mapImpact({ ...base, won: false, kills: 12, deaths: 2 }, m), weakLoss = mapImpact({ ...base, won: false, kills: 3, deaths: 8 }, m);
+    expect(strongLoss).toBeGreaterThan(weakLoss);
+    expect(mapImpact({ ...base, won: true, kills: 7, deaths: 4 }, m)).toBeGreaterThan(mapImpact({ ...base, won: false, kills: 7, deaths: 4 }, m));
+  });
+  it("v2: за турнир не больше ±5", () => {
+    expect(clampStep(95, 85)).toBe(90);
+    expect(clampStep(78, 85)).toBe(80);
+    expect(clampStep(87, 85)).toBe(87);
   });
   it("шкала: шум отдельных карт не растягивает рейтинги", () => {
     const players = Array.from({ length: 50 }, (_, i) => ({ n: 20, meanZ: (i - 25) / 50 }));

@@ -1,4 +1,5 @@
 // Отчёт по рейтингу для проверки глазами (docs/12 «Проверка — таблица рейтингов глазами Georgy»).
+import { RATING_FEATURE_RU, RATING_FEATURES } from "@df/domain";
 import type { PlayerRating, RatingRun } from "./rating.js";
 
 export type PoolEntry = { player_id: number; tag: string; position: number; tmp: number | null };
@@ -15,7 +16,8 @@ export function ratingReport(run: RatingRun, pool: PoolEntry[], slug: string, ma
   L.push(`# Рейтинг игроков v1 — пул ${run.names[slug] ?? slug}`, "");
   L.push(`Модель — docs/12. Отправная точка — ${run.names[run.anchor]}; кого не было — последний тир-1 турнир за полгода до него; иначе дебютант 75.`);
   L.push(`Дальше рейтинг обновляется по стадиям: ${run.chain.map((s) => run.names[s] ?? s).join(" → ")}. Карт в расчёте (все загруженные турниры): ${mapsTotal}.`);
-  L.push(`Уровень на карте — очки фэнтези без бонуса за победу в минуту против обычных для той же позиции в том же исходе карты (правила 2026.10-spec без лечения).`);
+  L.push(`Рейтинг v2: оценка карты — показатели игрока против всей его позиции (не внутри исхода) + ${Math.round(run.model.win_share * 100)}% за результат команды;`);
+  L.push(`веса показателей по позициям — их связь с победой на всех загруженных картах (таблица внизу). За турнир — не больше ±5 (кроме дебюта и новой позиции).`);
   L.push(`Шкала: средний игрок тир-1 = 80, разброс настоящего уровня ±5 (1 стандартное отклонение карты = ${f1(run.scale)} пункта до усреднения).`, "");
   L.push(`«Было» — выдуманный рейтинг прототипа (сила команды + надбавка звезде), для сравнения.`, "");
 
@@ -41,6 +43,12 @@ export function ratingReport(run: RatingRun, pool: PoolEntry[], slug: string, ma
     L.push("", "## Ускоренная адаптация (дебют или новая позиция)", "");
     for (const r of fast) L.push(`- ${r.p!.nickname} (${r.e.tag}): ${r.p!.fast.join("; ")}`);
   }
+  // веса показателей по позициям — из данных: связь с победой на карте (корреляция), доля в оценке карты
+  L.push("", "## Веса показателей по позициям (v2)", "",
+    `Доля в оценке карты; минус — показатель связан с поражением (штраф). Результат команды — ${Math.round(run.model.win_share * 100)}% у всех позиций.`, "");
+  L.push(`| Показатель | ${[1, 2, 3, 4, 5].map((p) => POS[p]).join(" | ")} |`, `|---|${[1, 2, 3, 4, 5].map(() => "---|").join("")}`);
+  for (const f of RATING_FEATURES)
+    L.push(`| ${RATING_FEATURE_RU[f]} | ${([1, 2, 3, 4, 5] as const).map((p) => `${(run.model.byPos[p].features[f].weight * 100).toFixed(1)}%`).join(" | ")} |`);
   L.push("", `Последний турнир цепочки: ${run.names[last] ?? last}.`, "");
   return L.join("\n");
 }
