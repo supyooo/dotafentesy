@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baselines, calibrateScale, clampStep, fitImpactModel, mapImpact, mapZ, pointsPerMinute, RATING_DEFAULT, updateRating, type RatingMapStats } from "./rating.js";
+import { baselines, calibrateScale, clampStep, fitImpactModel, levelOf, mapImpact, mapZ, pointsPerMinute, RATING_DEFAULT, updateRating, type RatingMapStats } from "./rating.js";
 import { RULESET_SPEC } from "./scoring/ruleset.js";
 
 describe("рейтинг (docs/12)", () => {
@@ -43,10 +43,16 @@ describe("рейтинг (docs/12)", () => {
     expect(strongLoss).toBeGreaterThan(weakLoss);
     expect(mapImpact({ ...base, won: true, kills: 7, deaths: 4 }, m)).toBeGreaterThan(mapImpact({ ...base, won: false, kills: 7, deaths: 4 }, m));
   });
-  it("v2: за турнир не больше ±5", () => {
-    expect(clampStep(95, 85)).toBe(90);
-    expect(clampStep(78, 85)).toBe(80);
-    expect(clampStep(87, 85)).toBe(87);
+  it("ограничение за турнир — только если задано (по умолчанию выключено)", () => {
+    const c5 = { ...RATING_DEFAULT, max_step: 5 };
+    expect(RATING_DEFAULT.max_step).toBe(0);
+    expect(clampStep(95, 85, c5)).toBe(90);
+    expect(clampStep(78, 85, c5)).toBe(80);
+    expect(clampStep(87, 85, c5)).toBe(87);
+  });
+  it("уровень игры — в границах шкалы 50–99", () => {
+    expect(levelOf([5], 15)).toBe(99);
+    expect(levelOf([-5], 15)).toBe(50);
   });
   it("шкала: шум отдельных карт не растягивает рейтинги", () => {
     const players = Array.from({ length: 50 }, (_, i) => ({ n: 20, meanZ: (i - 25) / 50 }));

@@ -7,7 +7,7 @@ import type { ScoringRuleset } from "./scoring/ruleset.js";
 export interface RatingConfig {
   /** v2: доля оценки карты за результат команды (победа/поражение); остальное — личные показатели */
   win_share: number;
-  /** v2: рейтинг за один турнир сдвигается не больше чем на столько пунктов */
+  /** v2: рейтинг за один турнир сдвигается не больше чем на столько пунктов; 0 — без ограничения (решение 12.10.2026) */
   max_step: number;
   /** Средний игрок тир-1 */
   mean: number;
@@ -24,7 +24,7 @@ export interface RatingConfig {
 
 /** k = 20 подобран проверкой прогноза (cli rating-eval): рейтинг до Slam VIII предсказывает игру на нём лучше всего при k 10–20,
  *  а при 20 меньше ошибка и скачки (12.10.2026). */
-export const RATING_DEFAULT: RatingConfig = { win_share: 0.2, max_step: 5, mean: 80, target_sd: 5, k: 20, k_fast: 10, debut: 75, min: 50, max: 99 };
+export const RATING_DEFAULT: RatingConfig = { win_share: 0.2, max_step: 0, mean: 80, target_sd: 5, k: 20, k_fast: 10, debut: 75, min: 50, max: 99 };
 
 // ---------- v2 (решение 12.10.2026): оценка карты против всей позиции, по широкому набору показателей, веса — по данным
 /** Показатели игрока на карте для рейтинга v2 — шире, чем очки фэнтези (рейтинг должен быть реалистичным). */
@@ -143,8 +143,9 @@ export function calibrateScale(players: Array<{ n: number; meanZ: number }>, tar
 }
 
 /** Уровень игры по набору карт на шкале рейтинга. */
+/** Уровень игры по набору карт — на той же шкале, что и рейтинг, и в тех же границах (50–99, решение 12.10.2026). */
 export const levelOf = (zs: number[], scale: number, c: RatingConfig = RATING_DEFAULT) =>
-  c.mean + scale * (zs.reduce((a, b) => a + b, 0) / zs.length);
+  Math.max(c.min, Math.min(c.max, c.mean + scale * (zs.reduce((a, b) => a + b, 0) / zs.length)));
 
 /** Сдвиг рейтинга к уровню игры: доля = карты / (карты + k). Чтобы расти, надо играть выше текущего рейтинга. */
 export function updateRating(old: number, level: number, maps: number, k: number, c: RatingConfig = RATING_DEFAULT): number {

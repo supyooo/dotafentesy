@@ -111,12 +111,12 @@ export async function computeRatings(db: Db, opts: RatingOptions = {}): Promise<
       const fast = (debut && firstPlayed) || (lastPos != null && pos !== lastPos);
       if (fast) p.fast.push(`${names[slug] ?? slug}: ${debut && firstPlayed ? "дебют" : `позиция ${lastPos}→${pos}`}`);
       const stages = [...new Set(tr.map((r) => r.stage_idx))].sort((a, b) => a - b);
-      const tStart = rating; // v2: за турнир не больше ±max_step (кроме дебюта и новой позиции — там рейтинг ещё ищет уровень)
+      const tStart = rating; // ограничение за турнир ±max_step, если задано (по умолчанию выключено); дебют и новая позиция — без него
       for (const idx of stages) {
         const sr = tr.filter((r) => r.stage_idx === idx);
         const lv = level(sr);
         rating = updateRating(rating, lv, sr.length, fast ? c.k_fast : c.k, c);
-        if (!fast) rating = clampStep(rating, tStart, c);
+        if (!fast && c.max_step > 0) rating = clampStep(rating, tStart, c);
         p.steps.push({ tournament: slug, stage: sr[0]!.stage_name, stageIdx: idx, maps: sr.length, level: lv, rating });
       }
       p.after[slug] = rating; lastPos = pos; firstPlayed = false;
