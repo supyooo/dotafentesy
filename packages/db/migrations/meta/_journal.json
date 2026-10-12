@@ -15,6 +15,13 @@
       "when": 1791318091056,
       "tag": "0001_raw_payloads_partitioned",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791813066869,
+      "tag": "0002_series_bracket_key",
+      "breakpoints": true
     }
   ]
 }

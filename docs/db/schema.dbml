@@ -215,6 +215,7 @@ Table series [note: 'Серия (узел сетки)'] {
   stage_id bigint [not null, ref: > stages.id]
   group_id bigint [ref: > stage_groups.id]
   round_label text [not null, note: '«Верхняя сетка · 1/4»']
+  bracket_key text [note: 'ключ узла в регламенте турнира: A-O1, UBF, GF']
   bracket_side text [note: 'group | upper | lower | final']
   round_no smallint
   slot smallint [note: 'позиция в раунде']
@@ -232,6 +233,7 @@ Table series [note: 'Серия (узел сетки)'] {
   next_lose_series_id bigint [ref: > series.id, note: 'куда идёт проигравший']
   indexes {
     (tournament_id, stage_id)
+    (tournament_id, bracket_key) [unique]
     (status)
   }
 }

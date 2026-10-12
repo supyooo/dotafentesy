@@ -54,15 +54,18 @@ export async function scoreTournament(db: Db, tournamentSlug: string, opts: Scor
     written += values.length;
   }
 
-  // очки за стадию — только по правилам турнира (в player_stage_points нет ruleset_id)
-  await db.execute(sql`
-    insert into player_stage_points (tournament_player_id, stage_id, points, maps_played)
-    select pmp.tournament_player_id, sr.stage_id, sum(pmp.points), count(*)
-    from player_map_points pmp
-    join maps m on m.id = pmp.map_id
-    join series sr on sr.id = m.series_id
-    where sr.tournament_id = ${tour.id} and pmp.ruleset_id = ${tour.scoringRulesetId}
-    group by 1, 2
-    on conflict (tournament_player_id, stage_id) do update set points = excluded.points, maps_played = excluded.maps_played`);
+  // очки за стадию — только по правилам турнира (в player_stage_points нет ruleset_id). Пересобираются целиком:
+  // после разметки стадий карты переезжают между стадиями, и старые суммы иначе остались бы висеть.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`delete from player_stage_points where stage_id in (select id from stages where tournament_id = ${tour.id})`);
+    await tx.execute(sql`
+      insert into player_stage_points (tournament_player_id, stage_id, points, maps_played)
+      select pmp.tournament_player_id, sr.stage_id, sum(pmp.points), count(*)
+      from player_map_points pmp
+      join maps m on m.id = pmp.map_id
+      join series sr on sr.id = m.series_id
+      where sr.tournament_id = ${tour.id} and pmp.ruleset_id = ${tour.scoringRulesetId}
+      group by 1, 2`);
+  });
   return { rulesets: rulesets.map((r) => r.version), rows: written };
 }

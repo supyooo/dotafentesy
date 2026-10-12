@@ -112,6 +112,7 @@ CREATE TABLE "series" (
   "stage_id" bigint NOT NULL,
   "group_id" bigint,
   "round_label" text NOT NULL,
+  "bracket_key" text,
   "bracket_side" text,
   "round_no" smallint,
   "slot" smallint,
@@ -599,6 +600,8 @@ CREATE UNIQUE INDEX ON "stages" ("tournament_id", "idx");
 
 CREATE INDEX ON "series" ("tournament_id", "stage_id");
 
+CREATE UNIQUE INDEX ON "series" ("tournament_id", "bracket_key");
+
 CREATE INDEX ON "series" ("status");
 
 CREATE UNIQUE INDEX ON "maps" ("series_id", "map_no");
@@ -706,6 +709,8 @@ COMMENT ON COLUMN "tournament_teams"."status" IS 'active | eliminated';
 COMMENT ON TABLE "series" IS 'Серия (узел сетки)';
 
 COMMENT ON COLUMN "series"."round_label" IS '«Верхняя сетка · 1/4»';
+
+COMMENT ON COLUMN "series"."bracket_key" IS 'ключ узла в регламенте турнира: A-O1, UBF, GF';
 
 COMMENT ON COLUMN "series"."bracket_side" IS 'group | upper | lower | final';
 

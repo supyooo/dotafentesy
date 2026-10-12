@@ -1,0 +1,68 @@
+{
+  "slug": "blast-slam-8",
+  "source": "https://liquipedia.net/dota2/BLAST/SLAM/8 (сверено 12.10.2026)",
+  "utc_offset": "+02:00",
+  "stages": [
+    { "idx": 0, "name": "Группы", "format": "gsl", "from": "2026-09-29", "to": "2026-10-02",
+      "note": "4 группы GSL по 4, все серии Bo3; 1-е место — в матчи за посев, 2-е — в Last Chance, остальные выбывают",
+      "groups": { "A": ["PARI", "LGD", "LVL", "XG"], "B": ["TS", "1W", "NMS", "NAVI"], "C": ["YDX", "OG", "BB", "MOUZ"], "D": ["AUR", "GL", "TL", "YB"] } },
+    { "idx": 1, "name": "Посев и Last Chance", "format": "single_elim", "from": "2026-10-03", "to": "2026-10-03",
+      "note": "Bo3; матч за посев: победитель — в 1/2 верхней сетки, проигравший — в 1/4; Last Chance: победитель — в 1/4 верхней сетки, проигравший выбывает" },
+    { "idx": 2, "name": "Плей-офф", "format": "double_elim", "from": "2026-10-08", "to": "2026-10-10",
+      "note": "double elimination на 6 команд, Bo3: 1/4 и 1/2 верхней сетки, 1/4 и 1/2 нижней, финал верхней" },
+    { "idx": 3, "name": "Финальный день", "format": "double_elim", "from": "2026-10-11", "to": "2026-10-11",
+      "note": "финал нижней сетки Bo3, гранд-финал Bo5" }
+  ],
+  "series": [
+    { "key": "A-O1", "stage": 0, "group": "A", "label": "Группа A · стартовый матч 1", "side": "group", "round": 1, "bo": 3, "teams": ["PARI", "LVL"], "win": "A-W", "lose": "A-L" },
+    { "key": "A-O2", "stage": 0, "group": "A", "label": "Группа A · стартовый матч 2", "side": "group", "round": 1, "bo": 3, "teams": ["LGD", "XG"], "win": "A-W", "lose": "A-L" },
+    { "key": "A-W", "stage": 0, "group": "A", "label": "Группа A · матч победителей", "side": "group", "round": 2, "bo": 3, "teams": ["PARI", "LGD"], "win": "SM1", "lose": "A-D" },
+    { "key": "A-L", "stage": 0, "group": "A", "label": "Группа A · матч проигравших", "side": "group", "round": 2, "bo": 3, "teams": ["XG", "LVL"], "win": "A-D" },
+    { "key": "A-D", "stage": 0, "group": "A", "label": "Группа A · решающий матч", "side": "group", "round": 3, "bo": 3, "teams": ["LGD", "XG"], "win": "LC1" },
+
+    { "key": "B-O1", "stage": 0, "group": "B", "label": "Группа B · стартовый матч 1", "side": "group", "round": 1, "bo": 3, "teams": ["NMS", "TS"], "win": "B-W", "lose": "B-L" },
+    { "key": "B-O2", "stage": 0, "group": "B", "label": "Группа B · стартовый матч 2", "side": "group", "round": 1, "bo": 3, "teams": ["1W", "NAVI"], "win": "B-W", "lose": "B-L" },
+    { "key": "B-W", "stage": 0, "group": "B", "label": "Группа B · матч победителей", "side": "group", "round": 2, "bo": 3, "teams": ["TS", "1W"], "win": "SM2", "lose": "B-D" },
+    { "key": "B-L", "stage": 0, "group": "B", "label": "Группа B · матч проигравших", "side": "group", "round": 2, "bo": 3, "teams": ["NMS", "NAVI"], "win": "B-D" },
+    { "key": "B-D", "stage": 0, "group": "B", "label": "Группа B · решающий матч", "side": "group", "round": 3, "bo": 3, "teams": ["NMS", "1W"], "win": "LC2" },
+
+    { "key": "C-O1", "stage": 0, "group": "C", "label": "Группа C · стартовый матч 1", "side": "group", "round": 1, "bo": 3, "teams": ["OG", "BB"], "win": "C-W", "lose": "C-L" },
+    { "key": "C-O2", "stage": 0, "group": "C", "label": "Группа C · стартовый матч 2", "side": "group", "round": 1, "bo": 3, "teams": ["MOUZ", "YDX"], "win": "C-W", "lose": "C-L" },
+    { "key": "C-W", "stage": 0, "group": "C", "label": "Группа C · матч победителей", "side": "group", "round": 2, "bo": 3, "teams": ["BB", "YDX"], "win": "SM2", "lose": "C-D" },
+    { "key": "C-L", "stage": 0, "group": "C", "label": "Группа C · матч проигравших", "side": "group", "round": 2, "bo": 3, "teams": ["MOUZ", "OG"], "win": "C-D" },
+    { "key": "C-D", "stage": 0, "group": "C", "label": "Группа C · решающий матч", "side": "group", "round": 3, "bo": 3, "teams": ["OG", "BB"], "win": "LC2" },
+
+    { "key": "D-O1", "stage": 0, "group": "D", "label": "Группа D · стартовый матч 1", "side": "group", "round": 1, "bo": 3, "teams": ["GL", "AUR"], "win": "D-W", "lose": "D-L" },
+    { "key": "D-O2", "stage": 0, "group": "D", "label": "Группа D · стартовый матч 2", "side": "group", "round": 1, "bo": 3, "teams": ["TL", "YB"], "win": "D-W", "lose": "D-L" },
+    { "key": "D-W", "stage": 0, "group": "D", "label": "Группа D · матч победителей", "side": "group", "round": 2, "bo": 3, "teams": ["AUR", "TL"], "win": "SM1", "lose": "D-D" },
+    { "key": "D-L", "stage": 0, "group": "D", "label": "Группа D · матч проигравших", "side": "group", "round": 2, "bo": 3, "teams": ["YB", "GL"], "win": "D-D" },
+    { "key": "D-D", "stage": 0, "group": "D", "label": "Группа D · решающий матч", "side": "group", "round": 3, "bo": 3, "teams": ["TL", "GL"], "win": "LC1" },
+
+    { "key": "SM1", "stage": 1, "label": "Матч за посев 1", "round": 1, "bo": 3, "teams": ["AUR", "PARI"], "win": "UBSF1", "lose": "UBQF2" },
+    { "key": "SM2", "stage": 1, "label": "Матч за посев 2", "round": 1, "bo": 3, "teams": ["YDX", "TS"], "win": "UBSF2", "lose": "UBQF1" },
+    { "key": "LC1", "stage": 1, "label": "Last Chance 1", "round": 1, "bo": 3, "teams": ["LGD", "GL"], "win": "UBQF1" },
+    { "key": "LC2", "stage": 1, "label": "Last Chance 2", "round": 1, "bo": 3, "teams": ["OG", "1W"], "win": "UBQF2" },
+
+    { "key": "UBQF1", "stage": 2, "label": "1/4 верхней сетки 1", "side": "upper", "round": 1, "bo": 3, "teams": ["LGD", "YDX"], "win": "UBSF1", "lose": "LBQF2" },
+    { "key": "UBQF2", "stage": 2, "label": "1/4 верхней сетки 2", "side": "upper", "round": 1, "bo": 3, "teams": ["AUR", "1W"], "win": "UBSF2", "lose": "LBQF1" },
+    { "key": "UBSF1", "stage": 2, "label": "1/2 верхней сетки 1", "side": "upper", "round": 2, "bo": 3, "teams": ["PARI", "YDX"], "win": "UBF", "lose": "LBQF1" },
+    { "key": "UBSF2", "stage": 2, "label": "1/2 верхней сетки 2", "side": "upper", "round": 2, "bo": 3, "teams": ["AUR", "TS"], "win": "UBF", "lose": "LBQF2" },
+    { "key": "LBQF1", "stage": 2, "label": "1/4 нижней сетки 1", "side": "lower", "round": 1, "bo": 3, "teams": ["PARI", "1W"], "win": "LBSF" },
+    { "key": "LBQF2", "stage": 2, "label": "1/4 нижней сетки 2", "side": "lower", "round": 1, "bo": 3, "teams": ["LGD", "AUR"], "win": "LBSF" },
+    { "key": "UBF", "stage": 2, "label": "Финал верхней сетки", "side": "upper", "round": 3, "bo": 3, "teams": ["TS", "YDX"], "win": "GF", "lose": "LBF" },
+    { "key": "LBSF", "stage": 2, "label": "1/2 нижней сетки", "side": "lower", "round": 2, "bo": 3, "teams": ["PARI", "AUR"], "win": "LBF" },
+
+    { "key": "LBF", "stage": 3, "label": "Финал нижней сетки", "side": "lower", "round": 3, "bo": 3, "teams": ["PARI", "TS"], "win": "GF" },
+    { "key": "GF", "stage": 3, "label": "Гранд-финал", "side": "final", "round": 4, "bo": 5, "teams": ["TS", "YDX"] }
+  ],
+  "standings": {
+    "YDX": { "place": 1 },
+    "TS": { "place": 2, "out_after": 3 },
+    "PARI": { "place": 3, "out_after": 3 },
+    "AUR": { "place": 4, "out_after": 2 },
+    "LGD": { "place": 5, "out_after": 2 }, "1W": { "place": 5, "out_after": 2 },
+    "GL": { "place": 7, "out_after": 1 }, "OG": { "place": 7, "out_after": 1 },
+    "XG": { "place": 9, "out_after": 0 }, "NMS": { "place": 9, "out_after": 0 }, "BB": { "place": 9, "out_after": 0 }, "TL": { "place": 9, "out_after": 0 },
+    "LVL": { "place": 13, "out_after": 0 }, "NAVI": { "place": 13, "out_after": 0 }, "MOUZ": { "place": 13, "out_after": 0 }, "YB": { "place": 13, "out_after": 0 }
+  }
+}

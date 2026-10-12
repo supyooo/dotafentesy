@@ -89,6 +89,7 @@ export const series = pgTable("series", {
     stageId: bigint("stage_id", { mode: "number" }).notNull().references(() => stages.id),
     groupId: bigint("group_id", { mode: "number" }).references(() => stageGroups.id),
     roundLabel: text("round_label").notNull(),
+    bracketKey: text("bracket_key"),
     bracketSide: text("bracket_side"),
     roundNo: smallint("round_no"),
     slot: smallint("slot"),
@@ -106,6 +107,7 @@ export const series = pgTable("series", {
     nextLoseSeriesId: bigint("next_lose_series_id", { mode: "number" }).references((): AnyPgColumn => series.id),
 }, (t) => [
   index("series_tournament_id_stage_id_idx").on(t.tournamentId, t.stageId),
+  uniqueIndex("series_tournament_id_bracket_key_uq").on(t.tournamentId, t.bracketKey),
   index("series_status_idx").on(t.status).where(sql`${t.status} = 'live'`),
   check("series_bracket_side_check", sql`${t.bracketSide} in ('group', 'upper', 'lower', 'final')`),
   check("series_best_of_check", sql`${t.bestOf} in (1, 2, 3, 5)`),

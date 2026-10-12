@@ -168,6 +168,7 @@
 | stage_id | bigint | →stages NN |  |
 | group_id | bigint | →stage_groups |  |
 | round_label | text | NN | «Верхняя сетка · 1/4» |
+| bracket_key | text |  | ключ узла в регламенте турнира: A-O1, UBF, GF |
 | bracket_side | text |  | group | upper | lower | final |
 | round_no | smallint |  |  |
 | slot | smallint |  | позиция в раунде |
@@ -184,6 +185,7 @@
 | next_win_series_id | bigint | →series | куда идёт победитель |
 | next_lose_series_id | bigint | →series | куда идёт проигравший |
 - INDEX (tournament_id, stage_id)
+- UNIQUE (tournament_id, bracket_key)
 - INDEX (status) WHERE status = 'live'
 
 **`streams`** — Трансляции

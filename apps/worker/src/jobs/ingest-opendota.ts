@@ -62,6 +62,15 @@ async function defaultStage(db: Db, tournamentId: number): Promise<number> {
   return n!.id;
 }
 
+/** Стадия, в окно которой попадает карта (окна задаёт регламент); вне окон — запасная стадия. */
+async function stageAt(db: Db, tournamentId: number, at: Date, fallback: number): Promise<number> {
+  const [st] = await db.execute<{ id: number }>(sql`
+    select id from stages where tournament_id = ${tournamentId} and starts_at is not null
+      and ${at.toISOString()}::timestamptz between starts_at and coalesce(ends_at, 'infinity')
+    order by idx limit 1`).then((r) => r.rows);
+  return st?.id ?? fallback;
+}
+
 async function teamId(db: Db, t: ODTeam | null): Promise<number | null> {
   if (!t) return null;
   const known = await findRef(db, "team", "steam", t.team_id);
@@ -101,8 +110,24 @@ async function upsertMap(db: Db, tournamentId: number, stageId: number, m: NormM
       }
     }
   }
+  // узел сетки, заведённый заранее по регламенту (apply-format): та же пара, ещё без карт, стадия по времени карты.
+  // Формат серии (best_of) — из регламента, OpenDota его не переписывает.
+  if (!seriesId && radiantId && direId) {
+    const [slot] = await db.execute<{ id: number }>(sql`
+      select sr.id from series sr join stages st on st.id = sr.stage_id
+      where sr.tournament_id = ${tournamentId} and sr.status = 'scheduled'
+        and least(sr.team_a_id, sr.team_b_id) = ${Math.min(radiantId, direId)} and greatest(sr.team_a_id, sr.team_b_id) = ${Math.max(radiantId, direId)}
+        and not exists (select 1 from maps mp where mp.series_id = sr.id)
+        and ${m.startedAt.toISOString()}::timestamptz between coalesce(st.starts_at, '-infinity') and coalesce(st.ends_at, 'infinity')
+      order by abs(extract(epoch from coalesce(sr.scheduled_at, ${m.startedAt.toISOString()}::timestamptz) - ${m.startedAt.toISOString()}::timestamptz)), st.idx, sr.round_no, sr.slot
+      limit 1`).then((r) => r.rows);
+    if (slot) {
+      seriesId = slot.id;
+      await addRef(db, "series", seriesId, "opendota", m.seriesExtId ?? `match:${m.dotaMatchId}`);
+    }
+  }
   if (!seriesId) {
-    const [sr] = await db.insert(s.series).values({ tournamentId, stageId, roundLabel: "—", bestOf: m.bestOf,
+    const [sr] = await db.insert(s.series).values({ tournamentId, stageId: await stageAt(db, tournamentId, m.startedAt, stageId), roundLabel: "—", bestOf: m.bestOf,
       teamAId: radiantId, teamBId: direId, status: "live", startedAt: m.startedAt }).returning({ id: s.series.id });
     seriesId = sr!.id;
     await addRef(db, "series", seriesId, "opendota", m.seriesExtId ?? `match:${m.dotaMatchId}`);
@@ -148,14 +173,15 @@ async function upsertMap(db: Db, tournamentId: number, stageId: number, m: NormM
   }
 }
 
-/** Счёт и победитель серий — из карт (set-based). Серия завершена, когда кто-то набрал большинство при её best_of. */
+/** Счёт и победитель серий — из карт (set-based). Серия завершена, когда кто-то набрал большинство при её best_of
+ *  или сыграны все карты (ничья Bo2 — без победителя); пока нет — идёт (в том числе узел сетки, заведённый заранее). */
 export async function recomputeSeries(db: Db, tournamentId: number) {
   await db.execute(sql`
     update series sr set
       score_a = x.a, score_b = x.b,
       winner_team_id = case when x.a * 2 > sr.best_of then sr.team_a_id when x.b * 2 > sr.best_of then sr.team_b_id end,
-      status = case when x.a * 2 > sr.best_of or x.b * 2 > sr.best_of then 'finished' else sr.status end,
-      started_at = x.started, finished_at = case when x.a * 2 > sr.best_of or x.b * 2 > sr.best_of then x.ended end
+      status = case when x.a * 2 > sr.best_of or x.b * 2 > sr.best_of or x.a + x.b >= sr.best_of then 'finished' else 'live' end,
+      started_at = x.started, finished_at = case when x.a * 2 > sr.best_of or x.b * 2 > sr.best_of or x.a + x.b >= sr.best_of then x.ended end
     from (
       select m.series_id,
         count(*) filter (where m.winner_team_id = s2.team_a_id)::smallint a,

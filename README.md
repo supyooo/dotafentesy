@@ -19,5 +19,7 @@ B0 и B1 сделаны: каркас (`apps/api` с `/health`, `packages/domain
 без мини-лиг (54 таблицы), миграции и сиды (`pnpm db:migrate && pnpm db:seed`). Redis отложен.
 B2 сделан без очередей: `pnpm --filter @df/worker cli ingest blast-slam-8` (OpenDota → серии, карты, статистика, драфт, raw_payloads),
 `… cli score blast-slam-8 --rulesets 2026.10-spec,2026.10-b` (очки по версиям правил + очки за стадию), `… cli report blast-slam-8`.
+Стадии и сетка — регламент турнира `packages/db/tournaments/<slug>.json` (как готовить — README там же), `… cli format blast-slam-8`.
+В PowerShell аргумент с запятой брать в кавычки: `--rulesets '2026.10-spec,2026.10-b'`.
 Дальше — B3+ по docs/06 (составы, трансферы, цены, прогнозы) и API для прототипа; BullMQ — когда будет Redis. Спайк Slam VIII: live ждёт ключ Steam;
 скоринг `2026.10-b` — черновик на решение (docs/07). Хостинг — решает Georgy.

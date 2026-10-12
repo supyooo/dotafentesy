@@ -13,10 +13,13 @@ export class Throttle {
 }
 
 export async function getJson<T>(url: string, throttle?: Throttle, init?: RequestInit): Promise<Fetched<T>> {
+  const backoff = (attempt: number) => new Promise((r) => setTimeout(r, 2000 * 2 ** attempt));
   for (let attempt = 0; ; attempt++) {
     await throttle?.wait();
-    const res = await fetch(url, init);
-    if ((res.status === 429 || res.status >= 500) && attempt < 3) { await new Promise((r) => setTimeout(r, 2000 * 2 ** attempt)); continue; }
+    // обрыв соединения / таймаут — тоже повод повторить, а не ронять весь сбор
+    const res = await fetch(url, init).catch((e: unknown) => { if (attempt < 3) return null; throw e; });
+    if (!res) { await backoff(attempt); continue; }
+    if ((res.status === 429 || res.status >= 500) && attempt < 3) { await backoff(attempt); continue; }
     if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
     return { status: res.status, body: (await res.json()) as T, url };
   }
