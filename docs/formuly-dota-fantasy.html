@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Формулы Dota Fantasy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Макет: одна колонка для текста (~68 знаков), рисунки и калькуляторы — шире; три раздела по цепочке «карта → очки → рейтинг → цена». */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --ink:#12141a; --ink-2:#4a4f5c; --muted:#757b8a; --line:#dde0e7;
+  --accent:#c4311b; --accent-soft:#fbe8e3; --pos:#2a78d6; --neg:#e34948; --pos-soft:#e3eefb; --neg-soft:#fbe6e6;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif; --body:"Golos Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1015; --surface:#171a21; --ink:#f1f2f5; --ink-2:#b8bcc7; --muted:#8a8f9c; --line:#2a2f3a;
+  --accent:#f0623f; --accent-soft:#341b15; --pos:#3987e5; --neg:#e66767; --pos-soft:#16263b; --neg-soft:#3a1c1c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1015; --surface:#171a21; --ink:#f1f2f5; --ink-2:#b8bcc7; --muted:#8a8f9c; --line:#2a2f3a;
+  --accent:#f0623f; --accent-soft:#341b15; --pos:#3987e5; --neg:#e66767; --pos-soft:#16263b; --neg-soft:#3a1c1c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+.prose{max-width:68ch}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,4.6vw,44px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(22px,3vw,30px);font-weight:700}
+h3{font-size:18px;font-weight:500}
+p{margin:0}
+.lead{font-size:18px;color:var(--ink-2)}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:16px}
+.section{display:flex;flex-direction:column;gap:22px;padding-block:40px;border-top:1px solid var(--line)}
+.sub{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line)}
+nav.toc a{font:600 13px/1 var(--mono);color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:var(--surface)}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--accent);outline:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.formula{font:500 15px/1.6 var(--mono);background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;overflow-x:auto;white-space:nowrap}
+.formula b{color:var(--accent);font-weight:600}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.grid2>*{min-width:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font:600 12px/1.3 var(--mono);letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+td.r,th.r{text-align:right}
+.tbox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 13px/1 var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:720px){.calc{grid-template-columns:1fr}}
+.field{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px}
+.field label{font-size:14px;color:var(--ink-2)}
+.field output{font:600 14px/1 var(--mono);font-variant-numeric:tabular-nums}
+.field input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.inputs label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)}
+.inputs input,select{font:500 15px/1 var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.big{font:700 clamp(36px,6vw,56px)/1 var(--display);letter-spacing:-.02em}
+.result{display:flex;flex-direction:column;gap:6px}
+.note{font-size:14px;color:var(--muted)}
+.callout{background:var(--accent-soft);border-radius:12px;padding:14px 16px;font-size:15px}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink-2);font:12px var(--body)}
+.chart .tick{fill:var(--muted);font:11px var(--mono)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .axis{stroke:var(--muted);stroke-width:1}
+.bar-pos{fill:var(--pos)} .bar-neg{fill:var(--neg)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font:13px/1.35 var(--body);padding:7px 9px;border-radius:8px;max-width:260px;z-index:20;opacity:0;transition:opacity .12s}
+/* схема-поток на старте страницы */
+.flow text{fill:var(--ink);font:500 14px var(--body)}
+.flow .small{fill:var(--muted);font:12px var(--body)}
+.flow .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.flow .box.hl{stroke:var(--accent)}
+.flow .wire{fill:none;stroke:var(--line);stroke-width:2}
+.flow .dot{fill:var(--accent)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:12px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.step .n{font:700 13px/1 var(--mono);color:var(--accent)}
+.contrib{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr) 4.5em;gap:4px 10px;align-items:center;font-size:13px}
+.contrib .track{position:relative;height:14px}
+.contrib .track span{position:absolute;top:0;height:14px;border-radius:3px;transition:left .5s,width .5s}
+.contrib .v{font:600 13px var(--mono);text-align:right}
+.contrib .zero{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+.scale{position:relative;height:84px;margin-top:8px}
+.scale .bar{position:absolute;left:0;right:0;top:38px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--neg-soft),var(--line) 45%,var(--pos-soft))}
+.scale .mk{position:absolute;top:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.scale .mk.low{top:38px}
+.scale .mk b{display:block;width:2px;height:22px;background:var(--ink);margin-top:2px}
+.scale .mk.low b{height:28px;margin:0 0 2px}
+.scale .lab{position:absolute;top:50px;font:11px var(--mono);color:var(--muted)}
+.scale .lab[style*="100%"]{transform:translateX(-100%)}
+.meter{position:relative;height:46px;margin-top:4px}
+.meter .rail{position:absolute;left:0;right:0;top:20px;height:6px;border-radius:3px;background:var(--line)}
+.meter .seg{position:absolute;top:20px;height:6px;border-radius:3px;background:var(--pos);transition:left .6s,width .6s}
+.meter .pin{position:absolute;top:8px;transform:translateX(-50%);transition:left .6s;font:600 12px var(--mono);display:flex;flex-direction:column;align-items:center}
+.meter .pin i{width:14px;height:14px;border-radius:50%;border:2px solid var(--surface);margin-top:2px}
+.sx{display:flex;flex-direction:column;gap:8px;padding-block:10px;border-bottom:1px solid var(--line)}
+.sx-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sx-chip{font:600 14px/1 var(--mono);border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 10px;transition:opacity .35s}
+.sx-chip.bonus{border-color:var(--pos);color:var(--pos)}
+.sx-chip.res{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sx-op{color:var(--muted);font:600 14px var(--mono);transition:opacity .35s}
+.sx-dim{opacity:.12}
+.compare{display:grid;grid-template-columns:minmax(0,10em) minmax(0,1fr);gap:8px 12px;align-items:center;font-size:14px}
+.compare .bar{height:22px;border-radius:4px;background:var(--pos);transition:width .7s cubic-bezier(.2,.8,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;color:#fff;font:600 12px var(--mono);min-width:2.6em}
+.compare .bar.lose{background:var(--neg)}
+footer{border-top:1px solid var(--line);padding-top:24px;color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){.flow .dot{display:none}*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="stack" style="gap:14px;padding-bottom:18px">
+    <span class="eyebrow">Dota Fantasy · как это считается · 12 октября 2026</span>
+    <h1>Очки, рейтинг и цена игрока</h1>
+    <p class="lead prose">Всё начинается с одной карты: после неё у каждого игрока есть статистика. Из неё считаются три разные вещи. Очки фэнтези получает пользователь, у которого игрок в составе. Рейтинг показывает, насколько хорошо игрок играет. Цена говорит, сколько стоит взять его в состав. Ниже каждая формула разобрана на настоящих данных BLAST Slam VIII, а в калькуляторах можно покрутить цифры самому.</p>
+  </header>
+
+  <svg class="flow chart" viewBox="0 0 980 300" role="img" aria-label="Схема: статистика карты превращается в очки фэнтези, рейтинг и цену">
+    <path id="w1" class="wire" d="M250 150 C 360 150, 380 60, 520 60"/>
+    <path id="w2" class="wire" d="M250 150 C 360 150, 380 150, 520 150"/>
+    <path id="w3" class="wire" d="M250 150 C 360 150, 380 240, 520 240"/>
+    <path id="w4" class="wire" d="M760 150 C 820 150, 820 240, 760 240" />
+    <rect class="box hl" x="20" y="100" width="230" height="100" rx="12"/>
+    <text x="40" y="138">Карта сыграна</text>
+    <text class="small" x="40" y="162">убийства, смерти, помощь,</text>
+    <text class="small" x="40" y="180">добивания, варды, GPM…</text>
+    <rect class="box" x="520" y="22" width="240" height="76" rx="12"/>
+    <text x="540" y="54">Очки фэнтези</text><text class="small" x="540" y="76">что получает твой состав</text>
+    <rect class="box" x="520" y="112" width="240" height="76" rx="12"/>
+    <text x="540" y="144">Рейтинг игрока</text><text class="small" x="540" y="166">насколько хорошо он играет</text>
+    <rect class="box" x="520" y="202" width="240" height="76" rx="12"/>
+    <text x="540" y="234">Цена</text><text class="small" x="540" y="256">рейтинг + сила команды</text>
+    <text class="small" x="830" y="200">рейтинг</text><text class="small" x="830" y="216">идёт в цену</text>
+    <circle class="dot" r="5"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
+    <circle class="dot" r="5"><animateMotion dur="2.4s" begin=".8s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
+    <circle class="dot" r="5"><animateMotion dur="2.4s" begin="1.6s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
+    <circle class="dot" r="4"><animateMotion dur="1.6s" begin="1.2s" repeatCount="indefinite"><mpath href="#w4"/></animateMotion></circle>
+  </svg>
+
+  <nav class="toc" aria-label="Разделы"><a href="#points">1 · Очки фэнтези</a><a href="#rating">2 · Рейтинг</a><a href="#price">3 · Цена</a></nav>
+
+  <!-- ===================== 1. ОЧКИ ===================== -->
+  <section class="section" id="points">
+    <span class="eyebrow">Раздел 1</span>
+    <h2>Очки фэнтези</h2>
+    <p class="prose">Это то, что получает пользователь. Считается в четыре шага: очки игрока за карту, очки игрока за серию, капитан в составе, итог стадии с трансферами.</p>
+
+    <div class="sub">
+      <h3>Шаг 1. Очки за карту</h3>
+      <p class="prose">За каждое действие на карте игрок получает очки по таблице. Потом сумма умножается на коэффициент позиции: он выравнивает позиции, чтобы средний игрок любой роли набирал около 10 очков за карту. Иначе керри всегда набирали бы больше саппортов.</p>
+      <div class="grid2">
+        <div class="tbox"><table aria-label="Очки за карту">
+          <thead><tr><th>Действие</th><th class="r">Очки</th></tr></thead>
+          <tbody id="score-table"></tbody></table></div>
+        <div class="tbox"><table aria-label="Коэффициент позиции">
+          <thead><tr><th>Позиция</th><th class="r">Коэффициент</th></tr></thead>
+          <tbody id="mult-table"></tbody></table>
+          <p class="note" style="padding:10px">Коэффициент = 10 ÷ средние сырые очки игрока этой позиции за карту (посчитано на картах BLAST Slam VIII). Чем меньше таблица даёт роли, тем выше коэффициент. Оффлейнер набирает меньше всех: его работа — пространство, инициация, принять урон на себя — в таблице почти не видна, поэтому ×1,19. Саппорт 4 набирает больше всех за счёт оглушений, вардов и стаков, поэтому ×0,91.</p></div>
+      </div>
+      <p class="note prose">Добивание — последний удар по крипу (на линии или в лесу), за который игрок получает золото, «ластхит». Добивания своих крипов (денаи) очков не дают.</p>
+    </div>
+
+    <div class="sub">
+      <h3>Калькулятор карты</h3>
+      <p class="prose">Подставлены настоящие цифры с первой карты матча PARIVISION — Level UP (35 минут, победа PARIVISION). Измени любое число, и полоски пересчитаются: синие добавляют очки, красные отнимают.</p>
+      <div class="chips" role="group" aria-label="Пример игрока">
+        <button class="chip" type="button" data-preset="satanic" aria-pressed="true">Satanic · керри</button>
+        <button class="chip" type="button" data-preset="dukalis" aria-pressed="false">Dukalis · саппорт 5</button>
+      </div>
+      <div class="calc card">
+        <div class="stack">
+          <div class="inputs" id="map-inputs"></div>
+          <label class="inputs" style="grid-template-columns:1fr 1fr"><span style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)">Позиция
+            <select id="map-pos"><option value="1">1 · керри</option><option value="2">2 · мид</option><option value="3">3 · оффлейн</option><option value="4">4 · саппорт</option><option value="5">5 · саппорт</option></select></span>
+            <span style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink-2)">Исход карты
+            <select id="map-won"><option value="1">победа</option><option value="0">поражение</option></select></span></label>
+        </div>
+        <div class="stack">
+          <div class="contrib" id="map-contrib" aria-live="polite"></div>
+          <div class="result"><span class="note" id="map-formula"></span><span class="big num" id="map-total">15,1</span><span class="note">очка за карту</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Шаг 2. Очки игрока за серию</h3>
+      <p class="prose">Серия — это матч из нескольких карт (Bo3, гранд-финал Bo5). Очки игрока за серию — это <b>среднее его очков за карты серии</b>, и если его команда выиграла серию, к нему добавляется <b>5</b>. Поэтому победитель серии всегда получает больше проигравшего, а лишняя третья карта сама по себе очков не прибавляет. Ниже — настоящая групповая стадия двух игроков группы A на Slam VIII.</p>
+      <div class="formula">очки за серию = <b>среднее очков за карты серии</b> + <b>5</b>, если команда выиграла серию</div>
+      <div class="card stack">
+        <div class="chips" role="group" aria-label="Игрок"><button class="chip" type="button" data-sx="satanic" aria-pressed="true">Satanic · PARIVISION</button><button class="chip" type="button" data-sx="woe" aria-pressed="false">WoE · Level UP</button><button class="chip" type="button" id="sx-play">▶ Показать расчёт по шагам</button></div>
+        <div class="stack" id="sx-body" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Шаг 3. Капитан</h3>
+      <p class="prose">В составе пять игроков, одного из них ты назначаешь капитаном. Очки капитана за стадию удваиваются. Один раз за турнир можно включить «Тройного капитана»: в этой стадии очки капитана умножаются на 3. Капитана можно менять перед каждой стадией бесплатно.</p>
+      <div class="formula">очки игрока в составе = очки игрока за стадию × <b>2</b> у капитана (× <b>3</b> с «Тройным капитаном»), у остальных × 1</div>
+    </div>
+
+    <div class="sub">
+      <h3>Шаг 4. Итог стадии и трансферы</h3>
+      <p class="prose">Очки стадии — сумма очков пятерых игроков в составе с учётом капитана. Между стадиями состав можно менять: одна замена бесплатная, каждая следующая отнимает 4 очка от итога следующей стадии. Замена считается по тому, сколько позиций в составе отличается от состава в начале окна: продал игрока и купил его же обратно — это ноль замен. До первой стадии состав меняется без ограничений. Игрок, чья команда выбыла, приносит 0. Очки турнира — сумма всех стадий.</p>
+      <div class="formula">очки стадии = сумма очков пятерых (капитан × 2) − <b>4</b> × (замен в окне − 1, если замен больше одной)</div>
+      <p class="prose">Пример на настоящих данных Slam VIII: состав за 43,5 из 48, не больше двух игроков одной команды, капитан — Yatoro.</p>
+      <div class="tbox"><table aria-label="Пример: две стадии">
+        <thead><tr><th>Позиция</th><th>Группы</th><th class="r">Очки</th><th>Посев и Last Chance</th><th class="r">Очки</th></tr></thead>
+        <tbody>
+          <tr><td>1 · керри</td><td>Yatoro · <b>капитан</b> · 34,9 × 2</td><td class="r num">69,8</td><td>Yatoro · <b>капитан</b> · 15,1 × 2</td><td class="r num">30,2</td></tr>
+          <tr><td>2 · мид</td><td>bzm</td><td class="r num">43,5</td><td>bzm</td><td class="r num">17,0</td></tr>
+          <tr><td>3 · оффлейн</td><td>Batyuk</td><td class="r num">39,4</td><td>Batyuk</td><td class="r num">15,8</td></tr>
+          <tr><td>4 · саппорт</td><td>Mira</td><td class="r num">40,2</td><td><b>9Class</b> · замена 1, бесплатная</td><td class="r num">16,5</td></tr>
+          <tr><td>5 · саппорт</td><td>Whitemon</td><td class="r num">43,4</td><td><b>Sneyking</b> · замена 2, платная</td><td class="r num">14,5</td></tr>
+          <tr><td class="muted">Штраф за замены</td><td></td><td class="r num">—</td><td>одна замена сверх бесплатной</td><td class="r num">−4,0</td></tr>
+          <tr><td><b>Итог стадии</b></td><td></td><td class="r num"><b>236,3</b></td><td></td><td class="r num"><b>90,0</b></td></tr>
+        </tbody></table></div>
+      <p class="note prose">Перед посевом цены уже пересчитаны после групп: состав стоил 47,0 + 4,5 в банке = 51,5. Mira (8,0) заменена на 9Class (10,5), Whitemon (8,5) — на Sneyking (9,0); новый состав стоит 50,0, в банке остаётся 1,5. Итог турнира после двух стадий: 236,3 + 90,0 = 326,3.</p>
+      <p class="prose">Длина карты не учитывается: долгая карта — удача тех, у кого её игроки в составе.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 2. РЕЙТИНГ ===================== -->
+  <section class="section" id="rating">
+    <span class="eyebrow">Раздел 2</span>
+    <h2>Рейтинг игрока</h2>
+    <p class="prose">Рейтинг отвечает на вопрос «насколько хорошо этот игрок играет на своей позиции». Он не равен очкам фэнтези: в нём больше показателей, и он сравнивает игрока только с игроками той же роли. Поэтому саппорт и керри могут иметь одинаковый рейтинг.</p>
+    <div class="card">
+      <div class="scale" aria-label="Шкала рейтинга">
+        <div class="bar"></div>
+        <div class="mk" style="left:38.5%"><span>дебютант 75</span><b></b></div>
+        <div class="mk low" style="left:51.3%"><b></b><span>средний 80</span></div>
+        <div class="mk" style="left:66.7%"><span>Yatoro 86</span><b></b></div>
+        <div class="mk low" style="left:76.9%"><b></b><span>watson 90</span></div>
+        <span class="lab" style="left:0%">60</span><span class="lab" style="left:100%">99</span>
+      </div>
+      <p class="note">Средний игрок тир-1 — 80. Сильно выше среднего — 86 и больше. Потолок — 99. Отметки — рейтинги перед BLAST Slam VIII (Yatoro) и после него (watson).</p>
+    </div>
+
+    <div class="sub">
+      <h3>Как оценивается одна карта</h3>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><b>Показатели на 40 минут</b><span class="note">Убийства, смерти, помощь, добивания, GPM, XPM, урон, лечение, оглушения, варды, стаки, участие в убийствах, доля net worth. Счётчики пересчитываются на 40 минут, чтобы длинная карта не раздувала оценку.</span></div>
+        <div class="step"><span class="n">2</span><b>Сравнение со своей позицией</b><span class="note">Каждый показатель сравнивается со всеми игроками той же позиции: выше или ниже обычного и насколько.</span></div>
+        <div class="step"><span class="n">3</span><b>Веса по данным</b><span class="note">Важность показателя для позиции вычислена по 1372 картам тир-1: насколько он связан с победой. График ниже.</span></div>
+        <div class="step"><span class="n">4</span><b>20% за результат</b><span class="note">Победа команды добавляет, поражение отнимает. Сильная игра в проигранной карте всё равно поднимает оценку.</span></div>
+        <div class="step"><span class="n">5</span><b>Уровень игры на карте</b><span class="note">Всё складывается в одно число по шкале рейтинга: 80 — обычная карта для позиции, 95 — очень сильная, 65 — слабая. Уровень за стадию — среднее по её картам, от 50 до 99, как и сам рейтинг.</span></div>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Что важно на каждой позиции</h3>
+      <p class="prose">Доля каждого показателя в оценке карты. Эти веса никто не задавал руками: их дал расчёт по данным. Синие поднимают оценку, красные снижают. Смерти — главный штраф на всех позициях. Поставленные варды с победой почти не связаны, поэтому их вес около нуля.</p>
+      <div class="chips" role="group" aria-label="Позиция" id="w-pos"></div>
+      <div class="card"><svg class="chart" id="w-chart" viewBox="0 0 760 420" role="img" aria-label="Веса показателей для выбранной позиции"></svg>
+        <div class="legend"><span><i style="background:var(--pos)"></i>поднимает оценку</span><span><i style="background:var(--neg)"></i>снижает оценку</span><span class="muted">ещё 20% — результат команды</span></div></div>
+      <details class="tbox"><summary style="padding:12px;cursor:pointer;font-weight:600">Все веса таблицей</summary><table id="w-table"></table></details>
+    </div>
+
+    <div class="sub">
+      <h3>Как рейтинг меняется после стадии</h3>
+      <p class="prose">После каждой стадии рейтинг сдвигается в сторону того, как игрок сыграл в этой стадии. Чем больше карт сыграно, тем сильнее сдвиг: за 5 карт рейтинг проходит пятую часть пути до уровня игры, за 20 карт — половину. Чтобы расти, нужно играть выше своего текущего рейтинга, поэтому лидерам расти труднее. Если игрок весь турнир играет намного выше своего рейтинга, рейтинг вырастет сильно: ограничения за турнир нет.</p>
+      <div class="formula">новый = старый + <b>доля</b> × (уровень в стадии − старый),   <b>доля</b> = карты ÷ (карты + 20)</div>
+      <div class="calc card">
+        <div class="stack">
+          <div class="chips" role="group" aria-label="Пример"><button class="chip" type="button" data-up="yatoro" aria-pressed="true">Yatoro, группы Slam VIII</button><button class="chip" type="button" data-up="low" aria-pressed="false">Игрок 76 играет на 86</button><button class="chip" type="button" data-up="plus10" aria-pressed="false">Весь турнир на +10</button></div>
+          <div class="field"><label for="u-old">Рейтинг до стадии</label><output id="u-old-o"></output><input type="range" id="u-old" min="50" max="99" step="0.1"></div>
+          <div class="field"><label for="u-lvl">Уровень игры в стадии</label><output id="u-lvl-o"></output><input type="range" id="u-lvl" min="50" max="99" step="0.1"></div>
+          <div class="field"><label for="u-maps">Карт в стадии</label><output id="u-maps-o"></output><input type="range" id="u-maps" min="1" max="25" step="1"></div>
+        </div>
+        <div class="stack">
+          <div class="meter" id="u-meter"><div class="rail"></div><div class="seg" id="u-seg"></div>
+            <div class="pin" id="u-pin-old"><span>было</span><i style="background:var(--muted)"></i></div>
+            <div class="pin" id="u-pin-new"><span>стало</span><i style="background:var(--pos)"></i></div></div>
+          <div class="result"><span class="note" id="u-formula"></span><span class="big num" id="u-new">87,8</span><span class="note" id="u-note"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Откуда берётся стартовый рейтинг</h3>
+      <div class="steps">
+        <div class="step"><span class="n">TI 2026</span><b>Отправная точка</b><span class="note">Рейтинг считается по игре на The International 2026. У сыгравших мало карт он слегка подтягивается к 80.</span></div>
+        <div class="step"><span class="n">нет TI</span><b>Последний тир-1 до TI</b><span class="note">Кого не было на TI, берётся последний тир-1 турнир за полгода: DreamLeague, Wallachia, ESL One, BLAST Slam, EWC.</span></div>
+        <div class="step"><span class="n">75</span><b>Дебютант</b><span class="note">Нет ни одной карты тир-1 за полгода — старт с 75, и первый турнир рейтинг движется вдвое быстрее, пока не найдёт уровень.</span></div>
+        <div class="step"><span class="n">→</span><b>Дальше по цепочке</b><span class="note">Wallachia S9 → BLAST Slam VIII → … Пропустил турнир — рейтинг не меняется. Сменил позицию — первый турнир на новой роли рейтинг тоже движется быстрее.</span></div>
+      </div>
+      <div class="chips" role="group" aria-label="Игрок" id="h-players"></div>
+      <div class="card"><svg class="chart" id="h-chart" viewBox="0 0 760 300" role="img" aria-label="История рейтинга игрока"></svg><p class="note" id="h-note"></p></div>
+    </div>
+
+  </section>
+
+  <!-- ===================== 3. ЦЕНА ===================== -->
+  <section class="section" id="price">
+    <span class="eyebrow">Раздел 3</span>
+    <h2>Цена игрока</h2>
+    <p class="prose">Цена отвечает на вопрос «сколько очков фэнтези игрок, скорее всего, принесёт». Она зависит от двух вещей: насколько хорошо игрок играет (рейтинг) и как часто его команда выигрывает. В победе игрок получает +3 и обычно намного больше статистики, поэтому при одинаковом рейтинге игрок сильной команды дороже.</p>
+
+    <div class="sub">
+      <h3>Шаг 1. Сила команды</h3>
+      <p class="prose">Доля выигранных карт за полгода до турнира. Чтобы команда с пятью картами не выглядела непобедимой, к её картам добавляются 20 «нейтральных» карт с итогом 50 на 50.</p>
+      <div class="formula">сила команды = (побед + <b>10</b>) ÷ (карт + <b>20</b>)</div>
+      <div class="card"><svg class="chart" id="t-chart" viewBox="0 0 760 460" role="img" aria-label="Сила команд перед BLAST Slam VIII"></svg><p class="note">Перед BLAST Slam VIII. Пунктир — 50%.</p></div>
+    </div>
+
+    <div class="sub">
+      <h3>Шаг 2. Ожидаемые очки за карту</h3>
+      <div class="formula">ожидаемо = очки в поражении + <b>сила команды</b> × (очки в победе − очки в поражении) + <b>наклон</b> × (рейтинг − 80)</div>
+      <p class="prose">Средние очки за карту в победе и поражении взяты из всех загруженных карт, отдельно по позициям. Наклон — сколько очков за карту даёт один пункт рейтинга: примерно 0,2–0,26.</p>
+      <div class="tbox"><table><thead><tr><th>Позиция</th><th class="r">Очки в победе</th><th class="r">Очки в поражении</th><th class="r">За пункт рейтинга</th></tr></thead><tbody id="m-table"></tbody></table></div>
+    </div>
+
+    <div class="sub">
+      <h3>Шаг 3. Из ожидаемых очков в цену</h3>
+      <p class="prose">Ожидаемые очки переводятся в цену от 4,5 до 12,5 с шагом 0,5. Границы шкалы — 5% самых слабых и 5% самых сильных игроков пула на старте турнира. Кривая выгнута: звёзды стоят дорого, середина заметно дешевле. После каждой стадии цена пересчитывается из нового рейтинга и новой силы команды. Цена игрока выбывшей команды замораживается.</p>
+      <div class="chips" role="group" aria-label="Пример"><button class="chip" type="button" data-pp="yatoro" aria-pressed="true">Yatoro · Spirit</button><button class="chip" type="button" data-pp="dukalis" aria-pressed="false">Dukalis · PARIVISION</button><button class="chip" type="button" data-pp="weak" aria-pressed="false">Саппорт 85 в слабой команде</button></div>
+      <div class="calc card">
+        <div class="stack">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--ink-2)">Позиция<select id="p-pos"><option value="1">1 · керри</option><option value="2">2 · мид</option><option value="3">3 · оффлейн</option><option value="4">4 · саппорт</option><option value="5">5 · саппорт</option></select></label>
+          <div class="field"><label for="p-rt">Рейтинг</label><output id="p-rt-o"></output><input type="range" id="p-rt" min="65" max="99" step="0.1"></div>
+          <div class="field"><label for="p-wc">Сила команды</label><output id="p-wc-o"></output><input type="range" id="p-wc" min="30" max="75" step="1"></div>
+          <p class="note" id="p-formula"></p>
+        </div>
+        <div class="stack">
+          <svg class="chart" id="p-chart" viewBox="0 0 420 260" role="img" aria-label="Ожидаемые очки за карту и цена"></svg>
+          <div class="result"><span class="big num" id="p-price">10,5</span><span class="note">цена в составе</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Цифры — из базы проекта: BLAST Slam VIII, The International 2026, PGL Wallachia S9 и тир-1 турниры за полгода до TI (данные OpenDota). Формулы — docs/02, docs/04 и docs/12 в репозитории.</footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const f = (x, d = 1) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace('.', ',');
+const POS = ['', 'керри', 'мид', 'оффлейн', 'саппорт 4', 'саппорт 5'];
+const svgNS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, text) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+const tip = $('tip');
+const showTip = (e, html) => { tip.innerHTML = html; tip.style.opacity = 1; const x = Math.min(e.clientX + 14, innerWidth - 270), y = e.clientY + 14; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
+const hideTip = () => { tip.style.opacity = 0; };
+
+/* ---------- 1. очки за карту ---------- */
+const W = { kill: 0.3, assist: 0.15, death: -0.3, last_hit: 0.003, bd: 0.25, stun: 0.05, obs: 0.3, dew: 0.3, stack: 0.5, win: 3 };
+const MULT = { 1: 0.94, 2: 1.10, 3: 1.19, 4: 0.91, 5: 1.08 };
+const LINES = [
+  ['kills', 'Убийство', 'kill', '+0,3'], ['assists', 'Помощь', 'assist', '+0,15'], ['deaths', 'Смерть', 'death', '−0,3'],
+  ['lh', 'Добивание крипа', 'last_hit', '+0,003'], ['bd', 'Урон по строениям', 'bd', '+0,25 за 1000'], ['stun', 'Оглушение, секунда', 'stun', '+0,05'],
+  ['obs', 'Observer Ward поставлен', 'obs', '+0,3'], ['dew', 'Ward врага снят', 'dew', '+0,3'], ['stacks', 'Стак крипов', 'stack', '+0,5'],
+];
+$('score-table').innerHTML = LINES.map(l => `<tr><td>${l[1]}</td><td class="r num">${l[3]}</td></tr>`).join('') + '<tr><td>Победа на карте</td><td class="r num">+3</td></tr><tr><td class="muted">Лечение союзников</td><td class="r num muted">0</td></tr>';
+$('mult-table').innerHTML = [1, 2, 3, 4, 5].map(p => `<tr><td>${p} · ${POS[p]}</td><td class="r num">×${f(MULT[p], 2)}</td></tr>`).join('');
+const PRESETS = {
+  satanic: { pos: 1, won: 1, kills: 15, deaths: 1, assists: 3, lh: 581, bd: 23369, stun: 5.6, obs: 0, dew: 0, stacks: 1 },
+  dukalis: { pos: 5, won: 1, kills: 3, deaths: 5, assists: 13, lh: 11, bd: 0, stun: 57.3, obs: 8, dew: 2, stacks: 2 },
+};
+const FIELDS = [['kills', 'Убийства'], ['deaths', 'Смерти'], ['assists', 'Помощь'], ['lh', 'Добивания крипов'], ['bd', 'Урон по строениям'], ['stun', 'Оглушения, сек'], ['obs', 'Варды'], ['dew', 'Снятые варды'], ['stacks', 'Стаки']];
+$('map-inputs').innerHTML = FIELDS.map(([k, n]) => `<label for="mi-${k}">${n}<input id="mi-${k}" type="number" min="0" step="any" inputmode="decimal"></label>`).join('');
+function setPreset(name) {
+  const p = PRESETS[name];
+  FIELDS.forEach(([k]) => { $('mi-' + k).value = p[k]; });
+  $('map-pos').value = p.pos; $('map-won').value = p.won;
+  document.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', b.dataset.preset === name));
+  calcMap();
+}
+function calcMap() {
+  const v = k => Math.max(0, Number($('mi-' + k).value) || 0), pos = Number($('map-pos').value), won = $('map-won').value === '1';
+  const parts = [
+    ['Убийства', v('kills') * W.kill], ['Помощь', v('assists') * W.assist], ['Смерти', v('deaths') * W.death], ['Добивания крипов', v('lh') * W.last_hit],
+    ['Строения', v('bd') / 1000 * W.bd], ['Оглушения', v('stun') * W.stun], ['Варды', v('obs') * W.obs], ['Снятые варды', v('dew') * W.dew],
+    ['Стаки', v('stacks') * W.stack], ['Победа', won ? W.win : 0],
+  ];
+  const raw = parts.reduce((a, p) => a + p[1], 0), max = Math.max(6, ...parts.map(p => Math.abs(p[1]))), zero = 30;
+  $('map-contrib').innerHTML = parts.map(([n, x]) => {
+    const w = Math.abs(x) / max * (100 - zero) * 0.98, left = x >= 0 ? zero : zero - Math.min(zero, w);
+    return `<span>${n}</span><span class="track"><span class="zero" style="left:${zero}%"></span><span style="left:${left}%;width:${x >= 0 ? w : Math.min(zero, w)}%;background:var(${x >= 0 ? '--pos' : '--neg'})"></span></span><span class="v">${x >= 0 ? '+' : '−'}${f(Math.abs(x), 2)}</span>`;
+  }).join('');
+  $('map-formula').textContent = `${f(raw, 2)} сырых очков × ${f(MULT[pos], 2)} (коэффициент: ${POS[pos]}) =`;
+  $('map-total').textContent = f(raw * MULT[pos], 1);
+}
+document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => setPreset(b.dataset.preset));
+$('map-inputs').addEventListener('input', calcMap); $('map-pos').onchange = calcMap; $('map-won').onchange = calcMap;
+setPreset('satanic');
+
+/* ---------- очки за серию: настоящая групповая стадия ---------- */
+const SX = {
+  satanic: { who: 'Satanic · керри PARIVISION', series: [
+    { label: 'Группа A · стартовый матч 1', score: 'PARIVISION 2:0 Level UP', maps: [15.1, 4.9], won: true },
+    { label: 'Группа A · матч победителей', score: 'PARIVISION 2:0 LGD Gaming', maps: [15.3, 16.5], won: true } ] },
+  woe: { who: 'WoE · керри Level UP', series: [
+    { label: 'Группа A · стартовый матч 1', score: 'PARIVISION 2:0 Level UP', maps: [8.4, 1.8], won: false },
+    { label: 'Группа A · матч проигравших', score: 'Xtreme Gaming 2:0 Level UP', maps: [4.0, 10.5], won: false } ] },
+};
+let sxCur = 'satanic';
+const r1 = x => Math.round(x * 10 + 1e-9) / 10;
+function renderSx(name) {
+  sxCur = name; document.querySelectorAll('[data-sx]').forEach(b => b.setAttribute('aria-pressed', b.dataset.sx === name));
+  const d = SX[name]; let total = 0, step = 0;
+  const S = (cls, html) => `<span class="${cls}" data-st="${step++}">${html}</span>`;
+  const rows = d.series.map(s => {
+    const avg = s.maps.reduce((a, b) => a + b, 0) / s.maps.length, pts = r1(avg + (s.won ? 5 : 0)); total = r1(total + pts);
+    return `<div class="sx"><span class="note"><b>${s.label}</b> · ${s.score}</span><div class="sx-row">` +
+      s.maps.map((m, i) => S('sx-chip', `карта ${i + 1}: ${f(m)}`)).join('') +
+      S('sx-op', '→') + S('sx-chip', `среднее ${f(r1(avg))}`) +
+      S('sx-op', '+') + S('sx-chip' + (s.won ? ' bonus' : ''), s.won ? '5 за победу в серии' : '0, серия проиграна') +
+      S('sx-op', '=') + S('sx-chip res', f(pts)) + `</div></div>`;
+  }).join('');
+  $('sx-body').innerHTML = `<span class="note">${d.who}</span>${rows}<div class="sx-row">${S('sx-op', 'Группы:')}${S('sx-chip res', d.series.map(s => f(r1(s.maps.reduce((a, b) => a + b, 0) / s.maps.length + (s.won ? 5 : 0)))).join(' + ') + ' = ' + f(total))}</div>`;
+}
+function playSx() {
+  const els = [...$('sx-body').querySelectorAll('[data-st]')];
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  els.forEach(e => e.classList.add('sx-dim'));
+  els.forEach((e, i) => setTimeout(() => e.classList.remove('sx-dim'), 250 + i * 330));
+}
+document.querySelectorAll('[data-sx]').forEach(b => b.onclick = () => { renderSx(b.dataset.sx); playSx(); });
+$('sx-play').onclick = () => { renderSx(sxCur); playSx(); };
+renderSx('satanic');
+
+/* ---------- 2. веса рейтинга ---------- */
+const WEIGHTS = {"убийства":[10.3,9.6,8.5,7.2,6.5],"смерти":[-10.4,-10.3,-10.5,-11.3,-11.7],"помощь":[9.9,12.0,12.0,14.5,14.4],"добивания":[2.6,1.6,3.3,0.8,0.8],"GPM":[10.0,10.0,10.2,12.0,11.9],"XPM":[9.7,10.0,10.2,12.5,12.4],"урон по героям":[6.5,6.6,4.9,3.2,1.9],"урон по строениям":[12.5,7.9,7.1,5.5,5.5],"лечение":[0.9,0.7,2.7,2.8,4.1],"оглушения":[1.7,2.7,0.9,1.6,1.3],"варды":[-0.6,-0.1,-0.9,0.7,1.0],"снятые варды":[1.1,3.1,2.0,3.1,2.8],"стаки":[-0.1,0.1,1.2,0.5,0.2],"участие в убийствах":[2.9,2.9,3.9,-1.3,-0.7],"доля net worth в команде":[-0.9,-2.2,-1.7,3.1,4.8]};
+$('w-pos').innerHTML = [1, 2, 3, 4, 5].map(p => `<button class="chip" type="button" data-wp="${p}" aria-pressed="${p === 5}">${p} · ${POS[p]}</button>`).join('');
+$('w-table').innerHTML = `<thead><tr><th>Показатель</th>${[1, 2, 3, 4, 5].map(p => `<th class="r">${POS[p]}</th>`).join('')}</tr></thead><tbody>` +
+  Object.entries(WEIGHTS).map(([k, v]) => `<tr><td>${k}</td>${v.map(x => `<td class="r num">${f(x)}%</td>`).join('')}</tr>`).join('') + '</tbody>';
+function renderWeights(pos) {
+  document.querySelectorAll('[data-wp]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.wp) === pos));
+  const svg = $('w-chart'); svg.replaceChildren();
+  const rows = Object.entries(WEIGHTS).map(([k, v]) => [k, v[pos - 1]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const left = 200, right = 740, zeroX = left + (right - left) * (12 / 28), sc = (right - left) / 28, top = 10, rh = 26;
+  for (const t of [-10, -5, 0, 5, 10, 15]) {
+    const x = zeroX + t * sc;
+    svg.append(el('line', { x1: x, x2: x, y1: top, y2: top + rows.length * rh, class: t === 0 ? 'axis' : 'grid' }));
+    svg.append(el('text', { x, y: top + rows.length * rh + 16, 'text-anchor': 'middle', class: 'tick' }, (t > 0 ? '+' : '') + t + '%'));
+  }
+  rows.forEach(([k, v], i) => {
+    const y = top + i * rh + 5, w = Math.abs(v) * sc, x = v >= 0 ? zeroX : zeroX - w;
+    svg.append(el('text', { x: left - 10, y: y + 13, 'text-anchor': 'end' }, k));
+    const r = el('rect', { x, y, width: Math.max(w, 1.5), height: 16, rx: 3, class: v >= 0 ? 'bar-pos' : 'bar-neg' });
+    r.addEventListener('mousemove', e => showTip(e, `<b>${k}</b> · ${POS[pos]}<br>${v >= 0 ? '+' : ''}${f(v)}% оценки карты`)); r.addEventListener('mouseleave', hideTip);
+    svg.append(r);
+    svg.append(el('text', { x: v >= 0 ? zeroX + w + 6 : zeroX - w - 6, y: y + 13, 'text-anchor': v >= 0 ? 'start' : 'end', class: 'tick' }, (v > 0 ? '+' : '') + f(v) + '%'));
+  });
+}
+document.querySelectorAll('[data-wp]').forEach(b => b.onclick = () => renderWeights(Number(b.dataset.wp)));
+renderWeights(5);
+
+/* ---------- обновление рейтинга ---------- */
+const UP = { yatoro: { old: 86.1, lvl: 94.6, maps: 5 }, low: { old: 76, lvl: 86, maps: 6 }, plus10: { old: 80, lvl: 90, maps: 20 } };
+const lo = 50, hi = 99, pct = x => ((Math.max(lo, Math.min(hi, x)) - lo) / (hi - lo) * 100);
+function calcUp() {
+  const old = Number($('u-old').value), lvl = Number($('u-lvl').value), maps = Number($('u-maps').value), share = maps / (maps + 20);
+  const nw = Math.min(99, old + share * (lvl - old));
+  $('u-old-o').textContent = f(old); $('u-lvl-o').textContent = f(lvl); $('u-maps-o').textContent = maps;
+  $('u-formula').textContent = `${f(old)} + ${maps}/${maps + 20} × (${f(lvl)} − ${f(old)}) =`;
+  $('u-new').textContent = f(nw);
+  $('u-note').textContent = lvl === old ? 'Игрок сыграл ровно на свой рейтинг — рейтинг не меняется.'
+    : `Сдвиг ${nw >= old ? '+' : '−'}${f(Math.abs(nw - old))}: игрок сыграл ${lvl > old ? 'выше' : 'ниже'} своего рейтинга, рейтинг прошёл ${f(share * 100, 0)}% пути до уровня игры.`;
+  $('u-pin-old').style.left = pct(old) + '%'; $('u-pin-new').style.left = pct(nw) + '%';
+  $('u-seg').style.left = Math.min(pct(old), pct(nw)) + '%'; $('u-seg').style.width = Math.abs(pct(nw) - pct(old)) + '%';
+  $('u-seg').style.background = nw >= old ? 'var(--pos)' : 'var(--neg)';
+  $('u-pin-new').querySelector('i').style.background = nw >= old ? 'var(--pos)' : 'var(--neg)';
+}
+function setUp(name) { const u = UP[name]; $('u-old').value = u.old; $('u-lvl').value = u.lvl; $('u-maps').value = u.maps; document.querySelectorAll('[data-up]').forEach(b => b.setAttribute('aria-pressed', b.dataset.up === name)); calcUp(); }
+['u-old', 'u-lvl', 'u-maps'].forEach(id => $(id).addEventListener('input', () => { document.querySelectorAll('[data-up]').forEach(b => b.setAttribute('aria-pressed', 'false')); calcUp(); }));
+document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => setUp(b.dataset.up));
+setUp('yatoro');
+
+/* ---------- история рейтинга ---------- */
+const H = {
+  'Yatoro': { team: 'Team Spirit · керри', pts: [['TI 2026', 86.1], ['Slam: группы', 87.8], ['посев', 87.9], ['плей-офф', 84.4], ['финал', 83.9]], note: 'На TI — один из лучших керри. На Slam VIII отлично сыграл группы, потом просел в плей-офф.' },
+  'watson': { team: 'Team Yandex · керри', pts: [['TI 2026', 81.9], ['Wallachia S9', 86.9], ['Slam: группы', 88.8], ['посев', 87.4], ['плей-офф', 89.4], ['финал', 90.1]], note: 'Два сильных турнира подряд: Wallachia и чемпионский Slam VIII.' },
+  'rue': { team: 'Team Spirit · саппорт 5', pts: [['TI 2026', 80.7], ['Slam: группы', 83.0], ['посев', 83.0], ['плей-офф', 81.4], ['финал', 80.7]], note: 'В первой версии рейтинга был 72 из-за малого числа вардов. Сейчас варды почти не весят, важнее помощь и смерти.' },
+  'Saksa': { team: 'Team Yandex · саппорт 4', pts: [['TI 2026', 81.9], ['Wallachia S9', 86.8], ['Slam: группы', 87.6], ['посев', 86.1], ['плей-офф', 87.4], ['финал', 87.5]], note: 'Сильная Wallachia подняла рейтинг; на Slam VIII держался на уровне.' },
+  'No[o]ne-': { team: 'PARIVISION · мид', pts: [['TI 2026', 82.2], ['Slam: группы', 83.8], ['посев', 84.9], ['плей-офф', 85.8], ['финал', 85.1]], note: 'Рос всю дорогу до финального дня.' },
+};
+const names = Object.keys(H);
+$('h-players').innerHTML = names.map((n, i) => `<button class="chip" type="button" data-hp="${n}" aria-pressed="${i === 0}">${n}</button>`).join('');
+function renderHist(name) {
+  document.querySelectorAll('[data-hp]').forEach(b => b.setAttribute('aria-pressed', b.dataset.hp === name));
+  const d = H[name], svg = $('h-chart'); svg.replaceChildren();
+  const x0 = 54, x1 = 730, y0 = 20, y1 = 240, vmin = 76, vmax = 94, n = d.pts.length;
+  const X = i => x0 + (x1 - x0) * (n === 1 ? 0.5 : i / (n - 1)), Y = v => y1 - (v - vmin) / (vmax - vmin) * (y1 - y0);
+  for (let v = 76; v <= 94; v += 2) { svg.append(el('line', { x1: x0, x2: x1, y1: Y(v), y2: Y(v), class: v === 80 ? 'axis' : 'grid' })); svg.append(el('text', { x: x0 - 8, y: Y(v) + 4, 'text-anchor': 'end', class: 'tick' }, v)); }
+  svg.append(el('text', { x: x1, y: Y(80) - 6, 'text-anchor': 'end', class: 'tick' }, 'средний 80'));
+  const pathD = d.pts.map((p, i) => `${i ? 'L' : 'M'}${X(i)} ${Y(p[1])}`).join(' ');
+  const line = el('path', { d: pathD, fill: 'none', stroke: 'var(--pos)', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+  svg.append(line);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const L = line.getTotalLength(); line.style.strokeDasharray = L; line.style.strokeDashoffset = L;
+    line.getBoundingClientRect(); line.style.transition = 'stroke-dashoffset .9s ease-out'; line.style.strokeDashoffset = 0;
+  }
+  d.pts.forEach(([lab, v], i) => {
+    const c = el('circle', { cx: X(i), cy: Y(v), r: i === n - 1 ? 6 : 4.5, fill: 'var(--pos)', stroke: 'var(--surface)', 'stroke-width': 2 });
+    svg.append(c);
+    const hit = el('circle', { cx: X(i), cy: Y(v), r: 16, fill: 'transparent' });
+    hit.addEventListener('mousemove', e => showTip(e, `<b>${name}</b> · ${lab}<br>рейтинг ${f(v)}`)); hit.addEventListener('mouseleave', hideTip);
+    svg.append(hit);
+    svg.append(el('text', { x: X(i), y: Y(v) - 12, 'text-anchor': 'middle', class: 'tick' }, f(v)));
+    svg.append(el('text', { x: X(i), y: y1 + 22, 'text-anchor': 'middle' }, lab));
+  });
+  $('h-note').textContent = `${d.team}. ${d.note}`;
+}
+document.querySelectorAll('[data-hp]').forEach(b => b.onclick = () => renderHist(b.dataset.hp));
+renderHist('Yatoro');
+
+/* ---------- 3. сила команд ---------- */
+const TEAMS = [['PARIVISION', 30, 24], ['Team Yandex', 93, 62], ['BetBoom', 106, 67], ['Team Spirit', 102, 61], ['Aurora', 122, 70], ['Natus Vincere', 58, 33], ['LGD Gaming', 77, 42], ['1w Team', 31, 17], ['Team Liquid', 97, 51], ['Yakult Brothers', 10, 4], ['Xtreme Gaming', 85, 37], ['MOUZ', 36, 14], ['Level UP', 10, 2], ['Team Nemesis', 28, 9], ['GamerLegion', 68, 25], ['OG', 34, 9]];
+(function renderTeams() {
+  const svg = $('t-chart'), left = 150, right = 690, top = 8, rh = 27, sc = (right - left) / 100;
+  for (const t of [0, 25, 50, 75, 100]) { const x = left + t * sc; svg.append(el('line', { x1: x, x2: x, y1: top, y2: top + TEAMS.length * rh, class: t === 50 ? 'axis' : 'grid', 'stroke-dasharray': t === 50 ? '4 4' : null })); svg.append(el('text', { x, y: top + TEAMS.length * rh + 16, 'text-anchor': 'middle', class: 'tick' }, t + '%')); }
+  TEAMS.forEach(([n, maps, wins], i) => {
+    const s = (wins + 10) / (maps + 20) * 100, y = top + i * rh + 5;
+    svg.append(el('text', { x: left - 10, y: y + 13, 'text-anchor': 'end' }, n));
+    const r = el('rect', { x: left, y, width: s * sc, height: 16, rx: 3, class: 'bar-pos' });
+    r.addEventListener('mousemove', e => showTip(e, `<b>${n}</b><br>${wins} побед из ${maps} карт → сила ${f(s, 0)}%`)); r.addEventListener('mouseleave', hideTip);
+    svg.append(r);
+    svg.append(el('text', { x: left + s * sc + 6, y: y + 13, class: 'tick' }, `${f(s, 0)}% · ${wins}/${maps}`));
+  });
+})();
+
+/* ---------- модель цены ---------- */
+const M = { win: [14.01, 14.67, 14.43, 12.61, 14.05], loss: [5.07, 6.07, 5.88, 6.67, 7.13], slope: [0.206, 0.251, 0.258, 0.220, 0.235], lo: 7.83, hi: 12.46 };
+$('m-table').innerHTML = [1, 2, 3, 4, 5].map(p => `<tr><td>${p} · ${POS[p]}</td><td class="r num">${f(M.win[p - 1])}</td><td class="r num">${f(M.loss[p - 1])}</td><td class="r num">${f(M.slope[p - 1], 2)}</td></tr>`).join('');
+const price = e => { const x = Math.max(0, Math.min(1, (e - M.lo) / (M.hi - M.lo))); return Math.max(4.5, Math.min(12.5, Math.round((4.5 + 8 * Math.pow(x, 1.3)) * 2) / 2)); };
+const PP = { yatoro: { pos: 1, rt: 86.1, wc: 58 }, dukalis: { pos: 5, rt: 82.7, wc: 68 }, weak: { pos: 5, rt: 85, wc: 40 } };
+function calcPrice() {
+  const pos = Number($('p-pos').value), rt = Number($('p-rt').value), wc = Number($('p-wc').value) / 100, i = pos - 1;
+  const e = M.loss[i] + wc * (M.win[i] - M.loss[i]) + M.slope[i] * (rt - 80), pr = price(e);
+  $('p-rt-o').textContent = f(rt); $('p-wc-o').textContent = f(wc * 100, 0) + '%';
+  $('p-formula').innerHTML = `Ожидаемо: ${f(M.loss[i], 2)} + ${f(wc, 2)} × (${f(M.win[i], 2)} − ${f(M.loss[i], 2)}) + ${f(M.slope[i], 3)} × (${f(rt)} − 80) = <b class="num">${f(e, 2)}</b> очка за карту`;
+  $('p-price').textContent = f(pr);
+  const svg = $('p-chart'); svg.replaceChildren();
+  const x0 = 44, x1 = 408, y0 = 12, y1 = 222, emin = 6, emax = 14, X = v => x0 + (v - emin) / (emax - emin) * (x1 - x0), Y = v => y1 - (v - 4) / (13 - 4) * (y1 - y0);
+  for (let p = 4.5; p <= 12.5; p += 2) { svg.append(el('line', { x1: x0, x2: x1, y1: Y(p), y2: Y(p), class: 'grid' })); svg.append(el('text', { x: x0 - 6, y: Y(p) + 4, 'text-anchor': 'end', class: 'tick' }, f(p))); }
+  for (let v = 6; v <= 14; v += 2) svg.append(el('text', { x: X(v), y: y1 + 16, 'text-anchor': 'middle', class: 'tick' }, v));
+  svg.append(el('text', { x: (x0 + x1) / 2, y: y1 + 34, 'text-anchor': 'middle' }, 'ожидаемые очки за карту'));
+  for (const b of [M.lo, M.hi]) svg.append(el('line', { x1: X(b), x2: X(b), y1: y0, y2: y1, class: 'axis', 'stroke-dasharray': '3 4' }));
+  let d = ''; for (let v = emin; v <= emax + 1e-9; v += 0.02) d += `${d ? 'L' : 'M'}${X(v).toFixed(1)} ${Y(price(v)).toFixed(1)}`;
+  svg.append(el('path', { d, fill: 'none', stroke: 'var(--pos)', 'stroke-width': 2 }));
+  const ec = Math.max(emin, Math.min(emax, e));
+  svg.append(el('line', { x1: X(ec), x2: X(ec), y1: Y(pr), y2: y1, stroke: 'var(--accent)', 'stroke-width': 1.5, 'stroke-dasharray': '2 3' }));
+  const dot = el('circle', { cx: X(ec), cy: Y(pr), r: 7, fill: 'var(--accent)', stroke: 'var(--surface)', 'stroke-width': 2 });
+  dot.addEventListener('mousemove', ev => showTip(ev, `${f(e, 2)} очка за карту → цена ${f(pr)}`)); dot.addEventListener('mouseleave', hideTip);
+  svg.append(dot);
+}
+function setPP(name) { const p = PP[name]; $('p-pos').value = p.pos; $('p-rt').value = p.rt; $('p-wc').value = p.wc; document.querySelectorAll('[data-pp]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pp === name)); calcPrice(); }
+['p-rt', 'p-wc'].forEach(id => $(id).addEventListener('input', () => { document.querySelectorAll('[data-pp]').forEach(b => b.setAttribute('aria-pressed', 'false')); calcPrice(); }));
+$('p-pos').onchange = () => { document.querySelectorAll('[data-pp]').forEach(b => b.setAttribute('aria-pressed', 'false')); calcPrice(); };
+document.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => setPP(b.dataset.pp));
+setPP('yatoro');
+})();
+</script>
+
+</body>
+</html>
