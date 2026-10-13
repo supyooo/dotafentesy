@@ -586,5 +586,30 @@
     "account_id": 177203952,
     "photo": null,
     "rating_bonus_tmp": 0
+  },
+  {
+    "id": "darklord",
+    "nick": "Darklord^",
+    "account_id": 879017980
+  },
+  {
+    "id": "stojkov",
+    "nick": "Stojkov",
+    "account_id": 262476000
+  },
+  {
+    "id": "saberlight",
+    "nick": "SaberLight",
+    "account_id": 126212866
+  },
+  {
+    "id": "xsvampire",
+    "nick": "xsvampire",
+    "account_id": 326327879
+  },
+  {
+    "id": "kidaro",
+    "nick": "Kidaro",
+    "account_id": 104334048
   }
 ]

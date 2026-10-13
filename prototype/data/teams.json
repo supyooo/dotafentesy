@@ -126,5 +126,35 @@
     "hue": 240,
     "steam_team_id": 9691969,
     "logo": "teams/nms.webp"
+  },
+  {
+    "id": "ast",
+    "name": "Astra Invicta",
+    "tag": "AST",
+    "hue": 268
+  },
+  {
+    "id": "legion",
+    "name": "LEGION",
+    "tag": "LEGION",
+    "hue": 12,
+    "steam_team_id": 10291652,
+    "logo": "teams/legion.webp"
+  },
+  {
+    "id": "ttb",
+    "name": "Team Tidebound",
+    "tag": "TTB",
+    "hue": 192,
+    "steam_team_id": 9640842,
+    "logo": "teams/ttb.webp"
+  },
+  {
+    "id": "pips",
+    "name": "Pipsqueak+4",
+    "tag": "PIPS",
+    "hue": 96,
+    "steam_team_id": 10150633,
+    "logo": "teams/pips.webp"
   }
 ]

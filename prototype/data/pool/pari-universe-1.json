@@ -1,0 +1,525 @@
+{
+ "tournament": {
+  "slug": "pari-universe-1",
+  "name": "PARI Universe",
+  "starts": "2026-10-21T22:00:00.000Z",
+  "ends": "2026-11-01T21:59:59.000Z"
+ },
+ "generated": "2026-10-13T13:29:41.838Z",
+ "rules": "рейтинг — docs/12 (цепочка от TI 2026, K=20; без карт в базе — дебютант 75); цена v1 — рейтинг + сила команды (02 §6: доля побед на картах за 183 дня до старта, без карт — 50%), шкала по 5–95 перцентилю ожидаемых очков пула",
+ "players": {
+  "16497807": {
+   "nick": "tOfu",
+   "team": "TL",
+   "position": 5,
+   "rating": 81.1,
+   "price": 8,
+   "expected": 10.87,
+   "source": "BLAST Slam VIII",
+   "maps": 29
+  },
+  "73401082": {
+   "nick": "Dukalis",
+   "team": "PARI",
+   "position": 5,
+   "rating": 81.8,
+   "price": 10.5,
+   "expected": 12.31,
+   "source": "BLAST Slam VIII",
+   "maps": 41
+  },
+  "77490514": {
+   "nick": "Boxi",
+   "team": "TL",
+   "position": 4,
+   "rating": 79.1,
+   "price": 5.5,
+   "expected": 9.48,
+   "source": "BLAST Slam VIII",
+   "maps": 29
+  },
+  "86698277": {
+   "nick": "33",
+   "team": "1W",
+   "position": 3,
+   "rating": 78.5,
+   "price": 6,
+   "expected": 9.89,
+   "source": "BLAST Slam VIII",
+   "maps": 54
+  },
+  "90423751": {
+   "nick": "Bignum",
+   "team": "GL",
+   "position": 4,
+   "rating": 78,
+   "price": 4.5,
+   "expected": 8.59,
+   "source": "BLAST Slam VIII",
+   "maps": 40
+  },
+  "93618577": {
+   "nick": "bzm",
+   "team": "1W",
+   "position": 2,
+   "rating": 79.9,
+   "price": 7,
+   "expected": 10.46,
+   "source": "BLAST Slam VIII",
+   "maps": 54
+  },
+  "93817671": {
+   "nick": "Malady",
+   "team": "YDX",
+   "position": 5,
+   "rating": 84.7,
+   "price": 12,
+   "expected": 12.95,
+   "source": "BLAST Slam VIII",
+   "maps": 63
+  },
+  "94054712": {
+   "nick": "Topson",
+   "team": "OG",
+   "position": 2,
+   "rating": 79.5,
+   "price": 5,
+   "expected": 9.26,
+   "source": "BLAST Slam VIII",
+   "maps": 27
+  },
+  "100594231": {
+   "nick": "skem",
+   "team": "OG",
+   "position": 5,
+   "rating": 79.1,
+   "price": 5.5,
+   "expected": 9.58,
+   "source": "BLAST Slam VIII",
+   "maps": 22
+  },
+  "103735745": {
+   "nick": "Saksa",
+   "team": "YDX",
+   "position": 4,
+   "rating": 87.5,
+   "price": 10.5,
+   "expected": 12.36,
+   "source": "BLAST Slam VIII",
+   "maps": 63
+  },
+  "104334048": {
+   "nick": "Kidaro",
+   "team": "LEGION",
+   "position": 5,
+   "rating": 75,
+   "price": 5.5,
+   "expected": 9.42,
+   "source": "дебютант: нет карт в базе",
+   "maps": 0
+  },
+  "106305042": {
+   "nick": "Larl",
+   "team": "TS",
+   "position": 2,
+   "rating": 80.2,
+   "price": 8.5,
+   "expected": 11.17,
+   "source": "BLAST Slam VIII",
+   "maps": 49
+  },
+  "106573901": {
+   "nick": "No[o]ne-",
+   "team": "PARI",
+   "position": 2,
+   "rating": 85.1,
+   "price": 12.5,
+   "expected": 13.25,
+   "source": "BLAST Slam VIII",
+   "maps": 41
+  },
+  "126212866": {
+   "nick": "Saberlight",
+   "team": "LEGION",
+   "position": 3,
+   "rating": 78.4,
+   "price": 6,
+   "expected": 9.74,
+   "source": "PGL Wallachia Season 9",
+   "maps": 31
+  },
+  "136829091": {
+   "nick": "Whitemon",
+   "team": "1W",
+   "position": 5,
+   "rating": 78.9,
+   "price": 7,
+   "expected": 10.45,
+   "source": "BLAST Slam VIII",
+   "maps": 54
+  },
+  "140835095": {
+   "nick": "Batyuk",
+   "team": "TS",
+   "position": 3,
+   "rating": 83.2,
+   "price": 9.5,
+   "expected": 11.74,
+   "source": "BLAST Slam VIII",
+   "maps": 34
+  },
+  "152962063": {
+   "nick": "miCKe",
+   "team": "TL",
+   "position": 1,
+   "rating": 80.5,
+   "price": 6,
+   "expected": 9.69,
+   "source": "BLAST Slam VIII",
+   "maps": 29
+  },
+  "154974246": {
+   "nick": "RCY",
+   "team": "GL",
+   "position": 2,
+   "rating": 80.1,
+   "price": 5.5,
+   "expected": 9.5,
+   "source": "BLAST Slam VIII",
+   "maps": 40
+  },
+  "160119017": {
+   "nick": "Fayde",
+   "team": "GL",
+   "position": 3,
+   "rating": 79.9,
+   "price": 5,
+   "expected": 9.25,
+   "source": "BLAST Slam VIII",
+   "maps": 40
+  },
+  "164199202": {
+   "nick": "9Class",
+   "team": "PARI",
+   "position": 4,
+   "rating": 83.1,
+   "price": 9,
+   "expected": 11.44,
+   "source": "BLAST Slam VIII",
+   "maps": 41
+  },
+  "165564598": {
+   "nick": "MieRo",
+   "team": "BB",
+   "position": 3,
+   "rating": 79.9,
+   "price": 7.5,
+   "expected": 10.83,
+   "source": "BLAST Slam VIII",
+   "maps": 32
+  },
+  "171262902": {
+   "nick": "watson",
+   "team": "YDX",
+   "position": 1,
+   "rating": 90.1,
+   "price": 12.5,
+   "expected": 13.24,
+   "source": "BLAST Slam VIII",
+   "maps": 63
+  },
+  "172099728": {
+   "nick": "Kiritych~",
+   "team": "BB",
+   "position": 1,
+   "rating": 79.9,
+   "price": 6.5,
+   "expected": 10.27,
+   "source": "BLAST Slam VIII",
+   "maps": 32
+  },
+  "175311897": {
+   "nick": "swedenstrong",
+   "team": "BB",
+   "position": 4,
+   "rating": 74.5,
+   "price": 5,
+   "expected": 8.92,
+   "source": "BLAST Slam VIII",
+   "maps": 8
+  },
+  "177203952": {
+   "nick": "Yuma",
+   "team": "GL",
+   "position": 1,
+   "rating": 79.4,
+   "price": 4.5,
+   "expected": 8.49,
+   "source": "BLAST Slam VIII",
+   "maps": 33
+  },
+  "181267255": {
+   "nick": "OneJey",
+   "team": "OG",
+   "position": 4,
+   "rating": 75.9,
+   "price": 4.5,
+   "expected": 8.05,
+   "source": "BLAST Slam VIII",
+   "maps": 11
+  },
+  "183719386": {
+   "nick": "ATF",
+   "team": "YDX",
+   "position": 3,
+   "rating": 90.2,
+   "price": 12.5,
+   "expected": 14.34,
+   "source": "BLAST Slam VIII",
+   "maps": 59
+  },
+  "191362875": {
+   "nick": "Speeed",
+   "team": "GL",
+   "position": 5,
+   "rating": 79,
+   "price": 6,
+   "expected": 9.64,
+   "source": "BLAST Slam VIII",
+   "maps": 40
+  },
+  "195108598": {
+   "nick": "Noticed",
+   "team": "PARI",
+   "position": 3,
+   "rating": 82.6,
+   "price": 11,
+   "expected": 12.42,
+   "source": "BLAST Slam VIII",
+   "maps": 41
+  },
+  "196878136": {
+   "nick": "Kataomi`",
+   "team": "BB",
+   "position": 5,
+   "rating": 75.6,
+   "price": 6.5,
+   "expected": 10.13,
+   "source": "BLAST Slam VIII",
+   "maps": 32
+  },
+  "218231587": {
+   "nick": "not me",
+   "team": "TS",
+   "position": 4,
+   "rating": 80.6,
+   "price": 7,
+   "expected": 10.3,
+   "source": "BLAST Slam VIII",
+   "maps": 49
+  },
+  "262476000": {
+   "nick": "Stojkov",
+   "team": "LEGION",
+   "position": 2,
+   "rating": 78.1,
+   "price": 6,
+   "expected": 9.9,
+   "source": "PGL Wallachia Season 9",
+   "maps": 26
+  },
+  "292921272": {
+   "nick": "Wisper",
+   "team": "TL",
+   "position": 3,
+   "rating": 82.9,
+   "price": 8,
+   "expected": 10.93,
+   "source": "BLAST Slam VIII",
+   "maps": 24
+  },
+  "312436974": {
+   "nick": "CHIRA_JUNIOR",
+   "team": "YDX",
+   "position": 2,
+   "rating": 83.5,
+   "price": 11.5,
+   "expected": 12.8,
+   "source": "BLAST Slam VIII",
+   "maps": 63
+  },
+  "317880638": {
+   "nick": "Save-",
+   "team": "BB",
+   "position": 2,
+   "rating": 77.4,
+   "price": 7,
+   "expected": 10.42,
+   "source": "BLAST Slam VIII",
+   "maps": 32
+  },
+  "321580662": {
+   "nick": "Yatoro",
+   "team": "TS",
+   "position": 1,
+   "rating": 83.9,
+   "price": 8.5,
+   "expected": 11.13,
+   "source": "BLAST Slam VIII",
+   "maps": 49
+  },
+  "326327879": {
+   "nick": "xsvampire",
+   "team": "LEGION",
+   "position": 4,
+   "rating": 75,
+   "price": 4.5,
+   "expected": 8.54,
+   "source": "дебютант: нет карт в базе",
+   "maps": 0
+  },
+  "331855530": {
+   "nick": "Pure",
+   "team": "1W",
+   "position": 1,
+   "rating": 82.5,
+   "price": 6.5,
+   "expected": 10.18,
+   "source": "BLAST Slam VIII",
+   "maps": 36
+  },
+  "346412363": {
+   "nick": "Ari",
+   "team": "1W",
+   "position": 4,
+   "rating": 79,
+   "price": 5.5,
+   "expected": 9.52,
+   "source": "BLAST Slam VIII",
+   "maps": 54
+  },
+  "355168766": {
+   "nick": "Natsumi",
+   "team": "OG",
+   "position": 1,
+   "rating": 76.9,
+   "price": 4.5,
+   "expected": 7.88,
+   "source": "BLAST Slam VIII",
+   "maps": 22
+  },
+  "402583877": {
+   "nick": "SSS",
+   "team": "OG",
+   "position": 3,
+   "rating": 80.3,
+   "price": 5,
+   "expected": 9.26,
+   "source": "BLAST Slam VIII",
+   "maps": 29
+  },
+  "847565596": {
+   "nick": "rue",
+   "team": "TS",
+   "position": 5,
+   "rating": 80.7,
+   "price": 8.5,
+   "expected": 11.35,
+   "source": "BLAST Slam VIII",
+   "maps": 49
+  },
+  "879017980": {
+   "nick": "Darklord,,`",
+   "team": "LEGION",
+   "position": 1,
+   "rating": 79.1,
+   "price": 5.5,
+   "expected": 9.35,
+   "source": "Esports World Cup 2026",
+   "maps": 17
+  },
+  "1044002267": {
+   "nick": "Satanic",
+   "team": "PARI",
+   "position": 1,
+   "rating": 87.7,
+   "price": 11.5,
+   "expected": 12.79,
+   "source": "BLAST Slam VIII",
+   "maps": 41
+  }
+ },
+ "teams": {
+  "1W": {
+   "chance": 0.515,
+   "maps": 46,
+   "wins": 24
+  },
+  "BB": {
+   "chance": 0.583,
+   "maps": 107,
+   "wins": 64
+  },
+  "GL": {
+   "chance": 0.398,
+   "maps": 68,
+   "wins": 25
+  },
+  "LEGION": {
+   "chance": 0.5,
+   "maps": 0,
+   "wins": 0
+  },
+  "OG": {
+   "chance": 0.385,
+   "maps": 45,
+   "wins": 15
+  },
+  "PARI": {
+   "chance": 0.687,
+   "maps": 47,
+   "wins": 36
+  },
+  "TL": {
+   "chance": 0.504,
+   "maps": 95,
+   "wins": 48
+  },
+  "TS": {
+   "chance": 0.588,
+   "maps": 111,
+   "wins": 67
+  },
+  "YDX": {
+   "chance": 0.68,
+   "maps": 105,
+   "wins": 75
+  }
+ },
+ "model": {
+  "win": {
+   "1": 14.014795918367339,
+   "2": 14.669023323615185,
+   "3": 14.430976676384839,
+   "4": 12.614504373177812,
+   "5": 14.047376093294442
+  },
+  "loss": {
+   "1": 5.065597667638476,
+   "2": 6.06727405247814,
+   "3": 5.88279883381924,
+   "4": 6.674017467248909,
+   "5": 7.133941605839413
+  },
+  "per_rating": {
+   "1": 0.206077465287464,
+   "2": 0.25092511465234585,
+   "3": 0.2576225892535675,
+   "4": 0.22019840883864333,
+   "5": 0.23457453925444666
+  },
+  "scale": 15.815057610463919,
+  "lo": 8.500383905819342,
+  "hi": 13.196379246805991
+ }
+}

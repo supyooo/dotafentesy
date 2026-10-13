@@ -68,8 +68,14 @@ for r in rosters:
             errors.append(f"rosters.json/{rid}: неизвестная команда {e['team']!r}")
         if e.get("status") not in r.get("statuses", {}):
             errors.append(f"rosters.json/{rid}: {e['team']} — неизвестный статус {e.get('status')!r}")
-        if sorted(e["players"]) != sorted(ROLES):
-            errors.append(f"rosters.json/{rid}: {e['team']} — позиции должны быть ровно {ROLES}")
+        # состав не объявлен (players: null) или объявлен не целиком — в прототипе место «не объявлен», на рынке его не взять
+        if e.get("players") is None:
+            warnings.append(f"rosters.json/{rid}: {e['team']} — состав не объявлен")
+            continue
+        if not set(e["players"]) <= set(ROLES):
+            errors.append(f"rosters.json/{rid}: {e['team']} — позиции только из {ROLES}")
+        elif sorted(e["players"]) != sorted(ROLES):
+            warnings.append(f"rosters.json/{rid}: {e['team']} — не объявлены: {', '.join(r for r in ROLES if r not in e['players'])}")
         for role, pid in e["players"].items():
             if pid not in player_ids:
                 errors.append(f"rosters.json/{rid}: {e['team']}/{role} — неизвестный игрок {pid!r}")
@@ -77,7 +83,7 @@ for r in rosters:
                 errors.append(f"rosters.json/{rid}: {pid} заявлен и за {used[pid]}, и за {e['team']}")
             used[pid] = e["team"]
     in_roster = {e["team"] for e in r["teams"]}
-    grouped = [t for g in r.get("groups", {}).values() for t in g]
+    grouped = [t for g in (r.get("groups") or {}).values() for t in g]
     if grouped and sorted(grouped) != sorted(in_roster):
         errors.append(f"rosters.json/{rid}: группы не совпадают с командами состава")
 
@@ -87,6 +93,12 @@ for t in tours["tournaments"]:
         errors.append(f"tournaments.json/{t['id']}: неизвестный состав {t.get('roster')!r}")
     if t.get("format") not in tours.get("formats", {}):
         errors.append(f"tournaments.json/{t['id']}: неизвестный формат {t.get('format')!r}")
+    for f in ("replay", "pool"):  # выгрузки из базы: cli export-replay / cli export-pool
+        if t.get(f) and not (DATA / t[f]).is_file():
+            errors.append(f"tournaments.json/{t['id']}: нет файла {f} — data/{t[f]}")
+    sd = t.get("stage_dates")
+    if sd and t.get("format") in tours.get("formats", {}) and len(sd) != len(tours["formats"][t["format"]]["stages"]):
+        errors.append(f"tournaments.json/{t['id']}: stage_dates — {len(sd)}, а стадий в формате {len(tours['formats'][t['format']]['stages'])}")
 
 for w in warnings:
     print("внимание " + w)

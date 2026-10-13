@@ -227,5 +227,251 @@
         "yb"
       ]
     }
+  },
+  {
+    "id": "pari-universe-1",
+    "source": "Участники — Liquipedia PARI Universe/1 и анонсы FISSURE; составы — страницы команд на Liquipedia (13.10.2026), LEGION — по закрытой квалификации",
+    "statuses": {
+      "inv": "Инвайт",
+      "qual": "Квалификация"
+    },
+    "teams": [
+      {
+        "team": "pari",
+        "status": "inv",
+        "players": {
+          "carry": "satanic",
+          "mid": "noone",
+          "off": "noticed",
+          "soft": "9class",
+          "hard": "dukalis"
+        }
+      },
+      {
+        "team": "ts",
+        "status": "inv",
+        "players": {
+          "carry": "yatoro",
+          "mid": "larl",
+          "off": "batyuk",
+          "soft": "notme",
+          "hard": "rue"
+        }
+      },
+      {
+        "team": "ydx",
+        "status": "inv",
+        "players": {
+          "carry": "watson",
+          "mid": "chira",
+          "off": "atf",
+          "soft": "saksa",
+          "hard": "malady"
+        }
+      },
+      {
+        "team": "bb",
+        "status": "inv",
+        "players": {
+          "carry": "kiritych",
+          "mid": "save",
+          "off": "miero",
+          "soft": "swedenstrong",
+          "hard": "kataomi"
+        }
+      },
+      {
+        "team": "1w",
+        "status": "inv",
+        "players": {
+          "carry": "pure",
+          "mid": "bzm",
+          "off": "33",
+          "soft": "ari",
+          "hard": "whitemon"
+        }
+      },
+      {
+        "team": "tl",
+        "status": "inv",
+        "players": {
+          "carry": "micke",
+          "off": "wisper",
+          "soft": "boxi",
+          "hard": "tofu"
+        },
+        "note": "Мид не объявлен: Nisha взял паузу 28.09, MidOne играл на Slam VIII заменой"
+      },
+      {
+        "team": "og",
+        "status": "inv",
+        "players": {
+          "carry": "natsumi",
+          "mid": "topson",
+          "off": "sss",
+          "soft": "onejey",
+          "hard": "skem"
+        }
+      },
+      {
+        "team": "gl",
+        "status": "inv",
+        "players": {
+          "carry": "yuma",
+          "mid": "rcy",
+          "off": "fayde",
+          "soft": "bignum",
+          "hard": "speeed"
+        }
+      },
+      {
+        "team": "ast",
+        "status": "inv",
+        "players": null,
+        "note": "Состав не объявлен: команды ещё нет на Liquipedia"
+      },
+      {
+        "team": "legion",
+        "status": "qual",
+        "players": {
+          "carry": "darklord",
+          "mid": "stojkov",
+          "off": "saberlight",
+          "soft": "xsvampire",
+          "hard": "kidaro"
+        }
+      }
+    ],
+    "groups": null
+  },
+  {
+    "id": "dreamleague-30",
+    "source": "Liquipedia DreamLeague/30: инвайты ESL от 12.10.2026; закрытые отборочные 13–17.10; составы на странице турнира не заполнены",
+    "statuses": {
+      "inv": "Инвайт"
+    },
+    "teams": [
+      {
+        "team": "ast",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "aur",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "bb",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "navi",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "pari",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "pips",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "ttb",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "ydx",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "lgd",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "xg",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "1w",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "gl",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "tl",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "nms",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      },
+      {
+        "team": "ts",
+        "status": "inv",
+        "players": null,
+        "note": "Состав — ближе к турниру"
+      }
+    ],
+    "slots": [
+      {
+        "qualification": "Закрытые отборочные · Западная Европа",
+        "count": 1
+      },
+      {
+        "qualification": "Закрытые отборочные · Восточная Европа",
+        "count": 1
+      },
+      {
+        "qualification": "Закрытые отборочные · Юго-Восточная Азия",
+        "count": 1
+      },
+      {
+        "qualification": "Закрытые отборочные · Китай",
+        "count": 1
+      },
+      {
+        "qualification": "Закрытые отборочные · Южная Америка",
+        "count": 1
+      },
+      {
+        "qualification": "Отборочные · регион не указан",
+        "count": 1
+      },
+      {
+        "qualification": "DreamLeague Division 2 · Series 5",
+        "count": 3
+      }
+    ],
+    "groups": null
   }
 ]

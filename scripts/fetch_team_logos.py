@@ -2,6 +2,7 @@
 
 python scripts/fetch_team_logos.py            — скачать/обновить prototype/teams/<id>.webp и поле logo в teams.json
 python scripts/fetch_team_logos.py --skip 1w  — не брать логотип для указанных команд (через запятую)
+python scripts/fetch_team_logos.py --only legion,ttb  — только указанные команды (остальные логотипы не трогать)
 
 steam_team_id в teams.json проверены по составам в матчах BLAST Slam VIII (OpenDota, 30.09–02.10.2026).
 Нужен Pillow (pip install pillow) — переводим PNG в webp 256×256.
@@ -25,10 +26,12 @@ def get(url, raw=False):
         return r.read() if raw else json.load(r)
 
 
-def main(skip):
+def main(skip, only=None):
     teams = json.loads((DATA / "teams.json").read_text(encoding="utf-8"))
     OUT.mkdir(exist_ok=True)
     for t in teams:
+        if only and t["id"] not in only:
+            continue
         sid = t.get("steam_team_id")
         if t["id"] in skip or not sid:
             print(f"{t['name']:<16} пропуск" + ("" if sid else " (нет steam_team_id)"))
@@ -51,4 +54,5 @@ def main(skip):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    main(set(a[a.index("--skip") + 1].split(",")) if "--skip" in a else set())
+    opt = lambda k: set(a[a.index(k) + 1].split(",")) if k in a else set()
+    main(opt("--skip"), opt("--only") or None)
