@@ -4,6 +4,7 @@
 //   pnpm --filter @df/worker cli report blast-slam-8
 //   pnpm --filter @df/worker cli format blast-slam-8 [--file путь.json]   регламент: стадии, группы, сетка, итог (packages/db/tournaments/)
 //   pnpm --filter @df/worker cli pool   ti-2026      пул по картам (позиции по линии и net worth); у турнира с заявкой — только сверка
+//   pnpm --filter @df/worker cli export-pool pari-universe-1   будущий турнир для прототипа: заявка, стартовые рейтинги и цены
 import { createDb } from "@df/db";
 import { sql } from "drizzle-orm";
 import { applyFormat, loadFormat } from "./jobs/apply-format.js";
@@ -11,6 +12,7 @@ import { ingestOpenDota } from "./jobs/ingest-opendota.js";
 import { buildPool } from "./jobs/pool.js";
 import { computeRatings, predictive } from "./jobs/rating.js";
 import { exportReplay } from "./jobs/export-replay.js";
+import { exportPool } from "./jobs/export-pool.js";
 import { RATING_DEFAULT } from "@df/domain";
 import { ratingReport, type PoolEntry } from "./jobs/rating-report.js";
 import { scoreTournament } from "./jobs/score.js";
@@ -26,6 +28,8 @@ try {
   if (cmd === "format") {
     const r = await applyFormat(db, loadFormat(slug, arg("--file")));
     console.log(`стадий ${r.stages}, групп ${r.groups}; узлы сетки: найдено ${r.matched}, занято сыгранной серией ${r.adopted}, создано ${r.created}`);
+    if (r.teams.length) console.log(`заведены команды: ${r.teams.join(", ")}`);
+    if (r.players) console.log(`заявка: ${r.players} игроков`);
     if (r.unplaced.length) console.log(`серии без узла в регламенте (${r.unplaced.length}):\n  ${r.unplaced.join("\n  ")}`);
     const st = await db.execute(sql`
       select st.idx, st.name, st.format, to_char(st.deadline_at at time zone 'UTC', 'DD.MM HH24:MI') deadline_utc,
@@ -51,6 +55,14 @@ try {
     console.log(`выгружено: ${r.players} игроков, ${r.stages} стадии, ${r.series} серий → ${out}`);
     console.log(`ожидаемые очки за карту: шкала цены ${r.lo.toFixed(2)}…${r.hi.toFixed(2)}`);
     console.table([1, 2, 3, 4, 5].map((p) => ({ позиция: p, победа: r.model.win[p as 1].toFixed(2), поражение: r.model.loss[p as 1].toFixed(2), "за пункт рейтинга": r.model.per_rating[p as 1].toFixed(3) })));
+  } else if (cmd === "export-pool") {
+    // cli export-pool pari-universe-1 — будущий турнир для прототипа: заявка, стартовые рейтинги и цены (prototype/data/pool/<slug>.json)
+    const out = arg("--out") ?? `../../prototype/data/pool/${slug}.json`;
+    const r = await exportPool(db, slug, out);
+    console.log(`выгружено: ${r.players} игроков, ${r.teams} команд → ${out}; шкала цены ${r.lo.toFixed(2)}…${r.hi.toFixed(2)}`);
+    const rows = Object.values(r.doc.players as Record<string, { nick: string; team: string; position: number; rating: number; price: number; source: string }>);
+    console.table(rows.map((p) => ({ команда: p.team, поз: p.position, игрок: p.nick, рейтинг: p.rating, цена: p.price, откуда: p.source })));
+    console.table(Object.entries(r.doc.teams).map(([t, v]) => ({ команда: t, карт: v.maps, побед: v.wins, сила: v.chance })));
   } else if (cmd === "rating-eval") {
     // cli rating-eval blast-slam-8 — предсказывает ли рейтинг до турнира игру на нём; подбор K (docs/12 §2)
     const tmp = new Map((await db.execute<{ player_id: number; r: number }>(sql`

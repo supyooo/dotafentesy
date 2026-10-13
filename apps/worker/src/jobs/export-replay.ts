@@ -6,14 +6,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { eq, sql } from "drizzle-orm";
 import { schema as s, type Db } from "@df/db";
-import {
-  expectedMapPoints, mapPoints, priceFromExpected, quantile, seriesPoints, teamWinChance,
-  type MapStats, type PointsModel, type Position, type ScoringRuleset,
-} from "@df/domain";
+import { expectedMapPoints, priceFromExpected, quantile, seriesPoints, type Position, type ScoringRuleset } from "@df/domain";
+import { fitPointsModel, loadScoredMaps, teamChanceAt, teamMapsIndex } from "./economy-data.js";
 import { computeRatings } from "./rating.js";
-
-const DAY = 86_400_000;
-const POSITIONS: Position[] = [1, 2, 3, 4, 5];
 
 export async function exportReplay(db: Db, slug: string, out: string) {
   const [tour] = await db.select().from(s.tournaments).where(eq(s.tournaments.slug, slug));
@@ -24,40 +19,10 @@ export async function exportReplay(db: Db, slug: string, out: string) {
   const bonus = Number((tour.config as { series_win_bonus?: number }).series_win_bonus ?? 5);
   const start = tour.startsAt!.getTime();
 
-  // все карты в базе: статистика игрока, позиция на своём турнире, очки за карту по правилам турнира-экспорта
-  const all = (await db.execute<{
-    map_id: number; started: number; slug: string; stage_idx: number; series_id: number; bracket_key: string | null; round_label: string;
-    team_a: number; team_b: number; winner: number | null; best_of: number; duration_s: number; map_winner: number;
-    player_id: number; acc: number; nick: string; team_id: number; tag: string; position: number; won: boolean;
-    kills: number; deaths: number; assists: number; last_hits: number; gpm: number | null; building_damage: number | null;
-    stun_s: string | null; obs_placed: number | null; obs_killed: number | null; camps_stacked: number | null;
-  }>(sql`
-    select m.id::int map_id, extract(epoch from m.started_at)::float8 * 1000 started, t.slug, st.idx stage_idx, sr.id::int series_id,
-      sr.bracket_key, sr.round_label, sr.team_a_id::int team_a, sr.team_b_id::int team_b, sr.winner_team_id::int winner, sr.best_of,
-      m.duration_s, m.winner_team_id::int map_winner,
-      p.id::int player_id, p.steam_account_id::float8 acc, p.nickname nick, pms.team_id::int, tm.tag, tp.position, pms.won,
-      pms.kills, pms.deaths, pms.assists, pms.last_hits, pms.gpm, pms.building_damage, pms.stun_s, pms.obs_placed, pms.obs_killed, pms.camps_stacked
-    from player_map_stats pms join maps m on m.id = pms.map_id and m.status = 'finished'
-    join series sr on sr.id = m.series_id join stages st on st.id = sr.stage_id join tournaments t on t.id = sr.tournament_id
-    join tournament_players tp on tp.tournament_id = t.id and tp.player_id = pms.player_id
-    join players p on p.id = pms.player_id join teams tm on tm.id = pms.team_id
-    where pms.won is not null
-    order by m.started_at, m.id`)).rows.map((r) => ({ ...r, started: Number(r.started), position: r.position as Position }));
-  const stats = (r: (typeof all)[number]): MapStats => ({ kills: r.kills, deaths: r.deaths, assists: r.assists, last_hits: r.last_hits, won: r.won,
-    building_damage: r.building_damage, healing: null, stun_s: r.stun_s == null ? null : Number(r.stun_s), obs_placed: r.obs_placed,
-    obs_killed: r.obs_killed, camps_stacked: r.camps_stacked });
-  const pts = all.map((r) => mapPoints(stats(r), r.position, ruleset));
-
-  // модель ожидаемых очков: средние в победе и поражении по позициям; пункт рейтинга = разброс очков / шкала рейтинга
+  // все карты в базе с очками по правилам турнира-экспорта; модель ожидаемых очков (02 §6)
+  const { all, pts } = await loadScoredMaps(db, ruleset);
   const ratings = await computeRatings(db);
-  const model: PointsModel = { win: {} as PointsModel["win"], loss: {} as PointsModel["loss"], per_rating: {} as PointsModel["per_rating"] };
-  for (const pos of POSITIONS) {
-    const w = pts.filter((_, i) => all[i]!.position === pos && all[i]!.won), l = pts.filter((_, i) => all[i]!.position === pos && !all[i]!.won);
-    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-    const sd = (xs: number[]) => { const m = mean(xs); return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / (xs.length - 1)); };
-    model.win[pos] = mean(w); model.loss[pos] = mean(l);
-    model.per_rating[pos] = ((sd(w) + sd(l)) / 2) / ratings.scale;
-  }
+  const model = fitPointsModel(all, pts, ratings.scale);
 
   // турнир-экспорт: игроки пула, их стартовый рейтинг (перед первой стадией) и рейтинг после каждой стадии
   const T = all.map((r, i) => ({ r, pt: pts[i]! })).filter((x) => x.r.slug === slug);
@@ -84,22 +49,9 @@ export async function exportReplay(db: Db, slug: string, out: string) {
   const stageNames = new Map((await db.execute<{ idx: number; name: string }>(sql`select idx, name from stages where tournament_id = ${tour.id}`)).rows.map((x) => [x.idx, x.name]));
   const stageName = (idx: number) => stageNames.get(idx) ?? String(idx);
 
-  // сила команды: карты за полгода до турнира + сыгранные стадии этого турнира (одна запись на команду и карту)
-  const teamMaps = new Map<number, Array<{ started: number; slug: string; stage: number; won: boolean }>>();
-  const seen = new Set<string>();
-  for (const x of all) {
-    const k = `${x.map_id}:${x.team_id}`; if (seen.has(k)) continue; seen.add(k);
-    teamMaps.set(x.team_id, [...(teamMaps.get(x.team_id) ?? []), { started: x.started, slug: x.slug, stage: x.stage_idx, won: x.won }]);
-  }
-  const teamChance = (teamId: number, upto: number | null) => {
-    let w = 0, n = 0;
-    for (const x of teamMaps.get(teamId) ?? []) {
-      const before = x.started < start && x.started >= start - 183 * DAY;
-      const inT = x.slug === slug && upto != null && x.stage <= upto;
-      if (before || inT) { n++; if (x.won) w++; }
-    }
-    return teamWinChance(w, n);
-  };
+  // сила команды: карты за полгода до турнира + сыгранные стадии этого турнира
+  const teamMaps = teamMapsIndex(all);
+  const teamChance = (teamId: number, upto: number | null) => teamChanceAt(teamMaps, teamId, start, slug, upto).chance;
   const expectedAt = (e: (typeof pool)[number], upto: number | null) =>
     expectedMapPoints(ratingAfter(e.player_id, upto), teamChance(e.team_id, upto), e.position as Position, model);
   const startE = pool.map((e) => expectedAt(e, null));

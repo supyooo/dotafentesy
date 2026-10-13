@@ -1,0 +1,46 @@
+{
+  "slug": "dreamleague-30",
+  "source": "https://liquipedia.net/dota2/DreamLeague/30 (сверено 13.10.2026; инвайты ESL от 12.10.2026, закрытые отборочные 13–17.10)",
+  "utc_offset": "+01:00",
+  "tournament": {
+    "name": "DreamLeague Season 30", "organizer": { "slug": "efg", "name": "ESL FACEIT Group" },
+    "status": "announced", "tier": 1, "location": "Онлайн · Европа (сервер Europe West)", "prize_usd": 750000, "fantasy": true,
+    "starts": "2026-12-02", "ends": "2026-12-13"
+  },
+  "teams": [
+    { "tag": "AST", "name": "Astra Invicta" },
+    { "tag": "TTB", "name": "Team Tidebound", "steam_team_id": 9640842 }
+  ],
+  "participants": ["AST", "AUR", "BB", "NAVI", "PARI", "PIPS", "TTB", "YDX", "LGD", "XG", "1W", "GL", "TL", "NMS", "TS"],
+  "slots": [
+    { "qualification": "Закрытые отборочные · Западная Европа", "count": 1 },
+    { "qualification": "Закрытые отборочные · Восточная Европа", "count": 1 },
+    { "qualification": "Закрытые отборочные · Юго-Восточная Азия", "count": 1 },
+    { "qualification": "Закрытые отборочные · Китай", "count": 1 },
+    { "qualification": "Закрытые отборочные · Южная Америка", "count": 1 },
+    { "qualification": "Отборочные (регион не указан)", "count": 1 },
+    { "qualification": "DreamLeague Division 2 · Series 5, места 1–3", "count": 3 }
+  ],
+  "stages": [
+    { "idx": 0, "name": "Швейцарка", "format": "swiss", "from": "2026-12-02",
+      "note": "24 команды по швейцарской системе, все серии Bo3; топ-8 — в плей-офф, остальные выбывают. Число раундов, правило выхода и дни стадии ESL ещё не опубликовала; ID лиги в Dota 2 тоже ещё не известен" },
+    { "idx": 1, "name": "Плей-офф", "format": "double_elim", "to": "2026-12-13",
+      "note": "double elimination на 8 команд, гранд-финал Bo5, остальное Bo3. Даты матчей не объявлены" }
+  ],
+  "series": [
+    { "key": "UBQF1", "stage": 1, "label": "1/4 верхней сетки 1", "side": "upper", "round": 1, "bo": 3, "win": "UBSF1", "lose": "LBR1-1" },
+    { "key": "UBQF2", "stage": 1, "label": "1/4 верхней сетки 2", "side": "upper", "round": 1, "bo": 3, "win": "UBSF1", "lose": "LBR1-1" },
+    { "key": "UBQF3", "stage": 1, "label": "1/4 верхней сетки 3", "side": "upper", "round": 1, "bo": 3, "win": "UBSF2", "lose": "LBR1-2" },
+    { "key": "UBQF4", "stage": 1, "label": "1/4 верхней сетки 4", "side": "upper", "round": 1, "bo": 3, "win": "UBSF2", "lose": "LBR1-2" },
+    { "key": "LBR1-1", "stage": 1, "label": "Нижняя сетка · раунд 1 №1", "side": "lower", "round": 1, "bo": 3, "win": "LBQF1" },
+    { "key": "LBR1-2", "stage": 1, "label": "Нижняя сетка · раунд 1 №2", "side": "lower", "round": 1, "bo": 3, "win": "LBQF2" },
+    { "key": "UBSF1", "stage": 1, "label": "1/2 верхней сетки 1", "side": "upper", "round": 2, "bo": 3, "win": "UBF", "lose": "LBQF2" },
+    { "key": "UBSF2", "stage": 1, "label": "1/2 верхней сетки 2", "side": "upper", "round": 2, "bo": 3, "win": "UBF", "lose": "LBQF1" },
+    { "key": "LBQF1", "stage": 1, "label": "1/4 нижней сетки 1", "side": "lower", "round": 2, "bo": 3, "win": "LBSF" },
+    { "key": "LBQF2", "stage": 1, "label": "1/4 нижней сетки 2", "side": "lower", "round": 2, "bo": 3, "win": "LBSF" },
+    { "key": "LBSF", "stage": 1, "label": "1/2 нижней сетки", "side": "lower", "round": 3, "bo": 3, "win": "LBF" },
+    { "key": "UBF", "stage": 1, "label": "Финал верхней сетки", "side": "upper", "round": 3, "bo": 3, "win": "GF", "lose": "LBF" },
+    { "key": "LBF", "stage": 1, "label": "Финал нижней сетки", "side": "lower", "round": 4, "bo": 3, "win": "GF" },
+    { "key": "GF", "stage": 1, "label": "Гранд-финал", "side": "final", "round": 4, "bo": 5 }
+  ]
+}

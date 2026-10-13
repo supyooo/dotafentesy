@@ -1,0 +1,72 @@
+{
+  "slug": "pari-universe-1",
+  "source": "https://liquipedia.net/dota2/PARI_Universe/1 (сверено 13.10.2026); регламент FISSURE https://docs.google.com/document/d/1JzNjT-jDiQNOFktDDwZts1i4jhjqeR3DL3LGt_WZ648; составы — страницы команд на Liquipedia, LEGION — закрытая квалификация (аккаунты по матчам OpenDota 9033626429, 9035220432)",
+  "utc_offset": "+02:00",
+  "tournament": {
+    "name": "PARI Universe", "opendota_league_id": 20395, "organizer": { "slug": "fissure", "name": "FISSURE" },
+    "status": "announced", "tier": 1, "location": "Онлайн · Европа (сервер Europe West)", "prize_usd": 250000, "fantasy": true
+  },
+  "teams": [
+    { "tag": "AST", "name": "Astra Invicta" },
+    { "tag": "LEGION", "name": "LEGION (stack)", "steam_team_id": 10291652 }
+  ],
+  "participants": ["PARI", "TS", "YDX", "BB", "1W", "GL", "OG", "TL", "AST", "LEGION"],
+  "rosters": {
+    "PARI": [{ "pos": 1, "nick": "Satanic", "acc": 1044002267 }, { "pos": 2, "nick": "No[o]ne-", "acc": 106573901 }, { "pos": 3, "nick": "Noticed", "acc": 195108598 }, { "pos": 4, "nick": "9Class", "acc": 164199202 }, { "pos": 5, "nick": "Dukalis", "acc": 73401082 }],
+    "TS": [{ "pos": 1, "nick": "Yatoro", "acc": 321580662 }, { "pos": 2, "nick": "Larl", "acc": 106305042 }, { "pos": 3, "nick": "Batyuk", "acc": 140835095 }, { "pos": 4, "nick": "not me", "acc": 218231587 }, { "pos": 5, "nick": "rue", "acc": 847565596 }],
+    "YDX": [{ "pos": 1, "nick": "watson", "acc": 171262902 }, { "pos": 2, "nick": "CHIRA_JUNIOR", "acc": 312436974 }, { "pos": 3, "nick": "ATF", "acc": 183719386 }, { "pos": 4, "nick": "Saksa", "acc": 103735745 }, { "pos": 5, "nick": "Malady", "acc": 93817671 }],
+    "BB": [{ "pos": 1, "nick": "Kiritych", "acc": 172099728 }, { "pos": 2, "nick": "Save-", "acc": 317880638 }, { "pos": 3, "nick": "MieRo`", "acc": 165564598 }, { "pos": 4, "nick": "swedenstrong", "acc": 175311897 }, { "pos": 5, "nick": "Kataomi`", "acc": 196878136 }],
+    "1W": [{ "pos": 1, "nick": "Pure", "acc": 331855530 }, { "pos": 2, "nick": "bzm", "acc": 93618577 }, { "pos": 3, "nick": "33", "acc": 86698277 }, { "pos": 4, "nick": "Ari", "acc": 346412363 }, { "pos": 5, "nick": "Whitemon", "acc": 136829091 }],
+    "GL": [{ "pos": 1, "nick": "Yuma", "acc": 177203952 }, { "pos": 2, "nick": "RCY", "acc": 154974246 }, { "pos": 3, "nick": "Fayde", "acc": 160119017 }, { "pos": 4, "nick": "Bignum", "acc": 90423751 }, { "pos": 5, "nick": "Speeed", "acc": 191362875 }],
+    "OG": [{ "pos": 1, "nick": "Natsumi", "acc": 355168766 }, { "pos": 2, "nick": "Topson", "acc": 94054712 }, { "pos": 3, "nick": "SSS", "acc": 402583877 }, { "pos": 4, "nick": "OneJey", "acc": 181267255 }, { "pos": 5, "nick": "skem", "acc": 100594231 }],
+    "TL": [{ "pos": 1, "nick": "miCKe", "acc": 152962063 }, { "pos": 3, "nick": "Wisper", "acc": 292921272 }, { "pos": 4, "nick": "Boxi", "acc": 77490514 }, { "pos": 5, "nick": "tOfu", "acc": 16497807 }],
+    "LEGION": [{ "pos": 1, "nick": "Darklord^", "acc": 879017980 }, { "pos": 2, "nick": "Stojkov", "acc": 262476000 }, { "pos": 3, "nick": "SaberLight", "acc": 126212866 }, { "pos": 4, "nick": "xsvampire", "acc": 326327879 }, { "pos": 5, "nick": "Kidaro", "acc": 104334048 }]
+  },
+  "rosters_note": "Astra Invicta — состав не объявлен; Team Liquid — мид не объявлен (Nisha взял паузу 28.09, MidOne играл на Slam VIII заменой)",
+  "stages": [
+    { "idx": 0, "name": "Группы", "format": "round_robin", "from": "2026-10-22", "to": "2026-10-27",
+      "note": "две группы по 5, круг в один оборот, все серии Bo3; в таблице — очко за каждую выигранную карту; 1–4 места — в плей-офф, 5-е выбывает; тай-брейки за выход и посев — 27 октября (две команды — Bo3, три и больше — Bo1 по кругу). Жеребьёвка групп не объявлена — узлы без команд и групп, по 4 матча в день" },
+    { "idx": 1, "name": "Плей-офф", "format": "double_elim", "from": "2026-10-28", "to": "2026-10-30",
+      "note": "double elimination на 8 команд без перезапуска финала, всё Bo3: 1/4 и 1/2 верхней сетки, раунд 1, 1/4 и 1/2 нижней. Посев: лидеры групп по очкам выбирают соперников (регламент §3.4). Переход проигравших 1/2 верхней в нижнюю — крест (стандарт), сверить с сеткой организатора" },
+    { "idx": 2, "name": "Финальные дни", "format": "double_elim", "from": "2026-10-31", "to": "2026-11-01",
+      "note": "финал верхней и финал нижней сетки Bo3 (31 октября), гранд-финал Bo5 (1 ноября)" }
+  ],
+  "series": [
+    { "key": "G1", "stage": 0, "label": "Группы · 22 окт · матч 1", "side": "group", "round": 1, "bo": 3, "at": "2026-10-22T10:00:00+02:00" },
+    { "key": "G2", "stage": 0, "label": "Группы · 22 окт · матч 2", "side": "group", "round": 1, "bo": 3, "at": "2026-10-22T13:00:00+02:00" },
+    { "key": "G3", "stage": 0, "label": "Группы · 22 окт · матч 3", "side": "group", "round": 1, "bo": 3, "at": "2026-10-22T16:00:00+02:00" },
+    { "key": "G4", "stage": 0, "label": "Группы · 22 окт · матч 4", "side": "group", "round": 1, "bo": 3, "at": "2026-10-22T19:00:00+02:00" },
+    { "key": "G5", "stage": 0, "label": "Группы · 23 окт · матч 1", "side": "group", "round": 2, "bo": 3, "at": "2026-10-23T10:00:00+02:00" },
+    { "key": "G6", "stage": 0, "label": "Группы · 23 окт · матч 2", "side": "group", "round": 2, "bo": 3, "at": "2026-10-23T13:00:00+02:00" },
+    { "key": "G7", "stage": 0, "label": "Группы · 23 окт · матч 3", "side": "group", "round": 2, "bo": 3, "at": "2026-10-23T16:00:00+02:00" },
+    { "key": "G8", "stage": 0, "label": "Группы · 23 окт · матч 4", "side": "group", "round": 2, "bo": 3, "at": "2026-10-23T19:00:00+02:00" },
+    { "key": "G9", "stage": 0, "label": "Группы · 24 окт · матч 1", "side": "group", "round": 3, "bo": 3, "at": "2026-10-24T10:00:00+02:00" },
+    { "key": "G10", "stage": 0, "label": "Группы · 24 окт · матч 2", "side": "group", "round": 3, "bo": 3, "at": "2026-10-24T13:00:00+02:00" },
+    { "key": "G11", "stage": 0, "label": "Группы · 24 окт · матч 3", "side": "group", "round": 3, "bo": 3, "at": "2026-10-24T16:00:00+02:00" },
+    { "key": "G12", "stage": 0, "label": "Группы · 24 окт · матч 4", "side": "group", "round": 3, "bo": 3, "at": "2026-10-24T19:00:00+02:00" },
+    { "key": "G13", "stage": 0, "label": "Группы · 25 окт · матч 1", "side": "group", "round": 4, "bo": 3, "at": "2026-10-25T10:00:00+02:00" },
+    { "key": "G14", "stage": 0, "label": "Группы · 25 окт · матч 2", "side": "group", "round": 4, "bo": 3, "at": "2026-10-25T13:00:00+02:00" },
+    { "key": "G15", "stage": 0, "label": "Группы · 25 окт · матч 3", "side": "group", "round": 4, "bo": 3, "at": "2026-10-25T16:00:00+02:00" },
+    { "key": "G16", "stage": 0, "label": "Группы · 25 окт · матч 4", "side": "group", "round": 4, "bo": 3, "at": "2026-10-25T19:00:00+02:00" },
+    { "key": "G17", "stage": 0, "label": "Группы · 26 окт · матч 1", "side": "group", "round": 5, "bo": 3, "at": "2026-10-26T10:00:00+02:00" },
+    { "key": "G18", "stage": 0, "label": "Группы · 26 окт · матч 2", "side": "group", "round": 5, "bo": 3, "at": "2026-10-26T13:00:00+02:00" },
+    { "key": "G19", "stage": 0, "label": "Группы · 26 окт · матч 3", "side": "group", "round": 5, "bo": 3, "at": "2026-10-26T16:00:00+02:00" },
+    { "key": "G20", "stage": 0, "label": "Группы · 26 окт · матч 4", "side": "group", "round": 5, "bo": 3, "at": "2026-10-26T19:00:00+02:00" },
+
+    { "key": "UBQF1", "stage": 1, "label": "1/4 верхней сетки 1", "side": "upper", "round": 1, "bo": 3, "at": "2026-10-28T10:00:00+02:00", "win": "UBSF1", "lose": "LBR1-1" },
+    { "key": "UBQF2", "stage": 1, "label": "1/4 верхней сетки 2", "side": "upper", "round": 1, "bo": 3, "at": "2026-10-28T13:00:00+02:00", "win": "UBSF1", "lose": "LBR1-1" },
+    { "key": "UBQF3", "stage": 1, "label": "1/4 верхней сетки 3", "side": "upper", "round": 1, "bo": 3, "at": "2026-10-28T16:00:00+02:00", "win": "UBSF2", "lose": "LBR1-2" },
+    { "key": "UBQF4", "stage": 1, "label": "1/4 верхней сетки 4", "side": "upper", "round": 1, "bo": 3, "at": "2026-10-28T19:00:00+02:00", "win": "UBSF2", "lose": "LBR1-2" },
+    { "key": "LBR1-1", "stage": 1, "label": "Нижняя сетка · раунд 1 №1", "side": "lower", "round": 1, "bo": 3, "at": "2026-10-29T10:00:00+02:00", "win": "LBQF1" },
+    { "key": "LBR1-2", "stage": 1, "label": "Нижняя сетка · раунд 1 №2", "side": "lower", "round": 1, "bo": 3, "at": "2026-10-29T13:00:00+02:00", "win": "LBQF2" },
+    { "key": "UBSF1", "stage": 1, "label": "1/2 верхней сетки 1", "side": "upper", "round": 2, "bo": 3, "at": "2026-10-29T16:00:00+02:00", "win": "UBF", "lose": "LBQF2" },
+    { "key": "UBSF2", "stage": 1, "label": "1/2 верхней сетки 2", "side": "upper", "round": 2, "bo": 3, "at": "2026-10-29T19:00:00+02:00", "win": "UBF", "lose": "LBQF1" },
+    { "key": "LBQF1", "stage": 1, "label": "1/4 нижней сетки 1", "side": "lower", "round": 2, "bo": 3, "at": "2026-10-30T14:00:00+02:00", "win": "LBSF" },
+    { "key": "LBQF2", "stage": 1, "label": "1/4 нижней сетки 2", "side": "lower", "round": 2, "bo": 3, "at": "2026-10-30T11:00:00+02:00", "win": "LBSF" },
+    { "key": "LBSF", "stage": 1, "label": "1/2 нижней сетки", "side": "lower", "round": 3, "bo": 3, "at": "2026-10-30T18:00:00+02:00", "win": "LBF" },
+
+    { "key": "UBF", "stage": 2, "label": "Финал верхней сетки", "side": "upper", "round": 3, "bo": 3, "at": "2026-10-31T14:00:00+02:00", "win": "GF", "lose": "LBF" },
+    { "key": "LBF", "stage": 2, "label": "Финал нижней сетки", "side": "lower", "round": 4, "bo": 3, "at": "2026-10-31T17:00:00+02:00", "win": "GF" },
+    { "key": "GF", "stage": 2, "label": "Гранд-финал", "side": "final", "round": 4, "bo": 5, "at": "2026-11-01T18:00:00+02:00" }
+  ]
+}

@@ -45,7 +45,8 @@ docs/09-database.md       ER-модель: домены, таблицы, при�
 docs/10-prototype-infra.md оформления турниров, данные, заставка, хостинг, скрипты прототипа
 docs/11-backend-structure.md предложение: монорепо (apps/api, apps/worker, packages/domain|db|contracts|sources), миграции Drizzle — на согласовании
 docs/12-player-rating.md  рейтинг игрока (публичный, до 99): уровень игры по позиции и исходу карты, цепочка TI 2026 → Wallachia → Slam
-packages/db/tournaments/  регламенты турниров (стадии, группы, сетка, итог) — готовятся руками до старта, `cli format <slug>`
+packages/db/tournaments/  регламенты турниров (стадии, группы, сетка, итог; у будущих — новые команды, участники, заявки) —
+                          готовятся руками до старта, `cli format <slug>`; пул для прототипа — `cli export-pool <slug>`
 apps/, packages/          бэкенд: api (NestJS Fastify), worker (джобы), domain (правила), db (Drizzle), sources (OpenDota)
 spikes/live-source/       спайк данных Slam VIII (TypeScript, tsx): final.ts (OpenDota → очки по спеке по уровням), live.ts (Steam, нужен ключ), REPORT.md
 models/                   Excel-модель распределения по лигам (+ build.py, которым она собрана)
