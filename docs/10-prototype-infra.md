@@ -89,6 +89,7 @@
 - **https://dota-fantasy.pages.dev** — Cloudflare Pages, аккаунт автора (wrangler залогинен на его компьютере).
   Деплой: `npx wrangler pages deploy prototype --project-name dota-fantasy --branch main` (выкладывается только `prototype/`).
   `prototype/_headers`: `X-Robots-Tag: noindex` (не снимать), `/data/*` без кэша. Несуществующие пути отдают index.html (200) — не утечка.
+  Документ «Как считаются рейтинг, цены и очки» — `prototype/formuly.html` → https://dota-fantasy.pages.dev/formuly (чтобы делиться ссылкой).
 - Яндекс Браузер и системный DNS провайдера не открывают `*.pages.dev` (блокировка на уровне DNS); Chrome/Edge открывают (secure DNS).
   Решение — свой домен на том же проекте (отложено автором). Для curl: `--resolve dota-fantasy.pages.dev:443:<IP из nslookup … 1.1.1.1>`.
 - Локально: `python scripts/serve.py` (без кэша, весь проект) → http://localhost:8000; `--share [порт]` — только `prototype/`,
