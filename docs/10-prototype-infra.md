@@ -15,7 +15,8 @@
   После любой правки данных: `python scripts/validate_data.py`.
 - **6 турниров** (`TOURS` из tournaments.json): The International 2026, BLAST Slam VIII (реальные данные), PARI Universe, EWC,
   PGL Wallachia S9, DreamLeague Season 30 (анонс).
-  На главной: «Реальные данные» — BLAST; «Скоро» — PARI Universe, DreamLeague S30, EWC; «Прошли» — TI (играбельное демо), Wallachia (итоги-пример).
+  На главной (с 15.10.2026): «Скоро» — PARI Universe (текущий раунд сезона, калибровка), DreamLeague S30, EWC; «Прошли» — BLAST Slam VIII
+  (реальные матчи, проигрывается по стадиям) и TI (демо). Пример сезона в кабинете убран — новый игрок начинает с нуля (docs/05).
   У каждого турнира своё оформление (`data-t`/`data-skin`), фирменная шапка (`renderHero`), заставка (`playIntro`)
   и экран перехода между стадиями (`tiStage`/`blStage`/`ewStage`/`walStage`/`dlStage`/`paStage`).
 - **Стартовая заставка «Сетка»** — `prototype/intro/df-intro.{js,css}` (`DFIntro.play('bracket')`), раз за сессию (`df-splash`).
