@@ -46,8 +46,14 @@ export async function exportReplay(db: Db, slug: string, out: string) {
     for (const st of p.steps) if (st.tournament === slug && st.stageIdx <= upto) v = st.rating;
     return v;
   };
-  const stageNames = new Map((await db.execute<{ idx: number; name: string }>(sql`select idx, name from stages where tournament_id = ${tour.id}`)).rows.map((x) => [x.idx, x.name]));
+  const stageRows = (await db.execute<{ idx: number; name: string; format: string }>(sql`select idx, name, format from stages where tournament_id = ${tour.id}`)).rows;
+  const stageNames = new Map(stageRows.map((x) => [x.idx, x.name])), stageFormats = new Map(stageRows.map((x) => [x.idx, x.format]));
   const stageName = (idx: number) => stageNames.get(idx) ?? String(idx);
+  // названия команд по тегу — для итогов турнира в прототипе (группы, сетка)
+  const teamNames = Object.fromEntries((await db.execute<{ tag: string; name: string }>(sql`
+    select distinct tm.tag, tm.name from teams tm where tm.id in (
+      select team_id from tournament_players where tournament_id = ${tour.id}
+      union select team_id from tournament_teams where tournament_id = ${tour.id})`)).rows.map((x) => [x.tag, x.name]));
 
   // сила команды: карты за полгода до турнира + сыгранные стадии этого турнира
   const teamMaps = teamMapsIndex(all);
@@ -107,8 +113,8 @@ export async function exportReplay(db: Db, slug: string, out: string) {
     rules: `очки: ${ruleset.version} без лечения; очки игрока за серию — среднее за карты + ${bonus} за победу в серии (как у BLAST); ` +
       `рейтинг — docs/12 (K=20); цена v1 — рейтинг + сила команды (02 §6), шкала по 5–95 перцентилю пула на старте`,
     scoring: { version: ruleset.version, weights: ruleset.weights, role_multipliers: ruleset.role_multipliers, series_win_bonus: bonus },
-    stages: stageIdx.map((idx, i) => ({ idx, name: stageName(idx), series: seriesOut[i] })),
-    groups, players,
+    stages: stageIdx.map((idx, i) => ({ idx, name: stageName(idx), format: stageFormats.get(idx) ?? null, series: seriesOut[i] })),
+    groups, teams: teamNames, players,
     model: { ...model, scale: ratings.scale, lo, hi },
   };
   mkdirSync(dirname(out), { recursive: true });

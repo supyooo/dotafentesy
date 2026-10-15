@@ -1309,6 +1309,9 @@ const NS=()=>STAGES.length; // стадий в турнире: Slam — 4, PARI 
 const byKey=k=>TEAMS.findIndex(t=>t.key===k);
 
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// перемешивание Фишера — Йетса: sort(()=>r()-.5) недетерминирован (число сравнений у движка зависит от оптимизации кода),
+// и боты с тем же зерном выходили разными от перезагрузки к перезагрузке
+function shuffle(a,r){for(let i=a.length-1;i>0;i--){const j=r()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
 const r1=x=>Math.round(x*10)/10, fmt=x=>r1(x).toFixed(1);
 
@@ -1458,13 +1461,13 @@ const keyOf=t=>'df-fantasy-v8-'+t+(TOURS[t]&&TOURS[t].replay?'-'+TOURS[t].replay
 let KEY=keyOf(TOUR);
 const MANAGERS=['Вы','Дима','Саня_мид','pos5enjoyer','Кирилл','Мила','Лёха','Артём','Настя','Гоша','rampage_only','Тимур','Вова','Ира','kek_carry','Паша'];
 function autoPick(r,alive){for(let tries=0;tries<500;tries++){const lu={},cnt={};let left=BUDGET,ok=true;
-  const order=ROLES.slice().sort(()=>r()-.5);
+  const order=shuffle(ROLES.slice(),r);
   order.forEach((role,i)=>{if(!ok)return;const rest=order.length-i-1;
     const c=P.filter(p=>p.role===role&&!p.tba&&alive.has(p.team)&&(cnt[p.team]||0)<MAX_TEAM&&p.price<=left-rest*MINP);
     if(!c.length){ok=false;return}const p=c[r()*c.length|0];lu[role]=p.id;cnt[p.team]=(cnt[p.team]||0)+1;left-=p.price});
   if(ok)return lu}return null}
 function bestOf(lu){let b=null;ROLES.forEach(k=>{const id=lu[k];if(id!=null&&(b==null||P[id].rating>P[b].rating))b=id});return b}
-function freshLobby(seed){const r=mulberry32(seed*3+1),order=[...Array(16).keys()].sort(()=>r()-.5);
+function freshLobby(seed){const r=mulberry32(seed*3+1),order=shuffle([...Array(16).keys()],r);
   return{order,picks:[],rosters:MANAGERS.map(()=>({})),out:MANAGERS.map(()=>false),snaps:[],swapsLeft:0,moved:MANAGERS.map(()=>false),log:[]}}
 function newSeed(){try{return crypto.getRandomValues(new Uint32Array(1))[0]%2000000000+1}catch(e){return(Math.random()*2e9|0)+1}}
 // новый турнир — пустой состав: игрок собирает пятёрку сам (как при первом заходе на сайт)
@@ -1774,7 +1777,7 @@ let WORLD=null;
 function priceAt(p,k){let v=p.price;for(let j=0;j<k&&j<DP.length;j++)v+=DP[j][p.id]||0;return Math.max(4,Math.min(13.5,v))}
 function ratingAt(p,k){let v=p.rating;for(let j=0;j<k&&j<DR.length;j++)v+=DR[j][p.id]||0;return v}
 function pickWeighted(c,r){let tot=0;c.forEach(p=>tot+=BOT_W[p.id]);let x=r()*tot;for(const p of c){x-=BOT_W[p.id];if(x<=0)return p}return c[c.length-1]}
-function botLineup(r){for(let t=0;t<300;t++){const lu=[0,0,0,0,0],cnt={};let left=BUDGET,ok=true;const ord=[0,1,2,3,4].sort(()=>r()-.5);
+function botLineup(r){for(let t=0;t<300;t++){const lu=[0,0,0,0,0],cnt={};let left=BUDGET,ok=true;const ord=shuffle([0,1,2,3,4],r);
   for(let i=0;i<5;i++){const ri=ord[i],rest=4-i,c=BYROLE[ri].filter(p=>(cnt[p.team]||0)<MAX_TEAM&&p.price<=left-rest*MINP);
     if(!c.length){ok=false;break}const pk=pickWeighted(c,r);lu[ri]=pk.id;cnt[pk.team]=(cnt[pk.team]||0)+1;left-=pk.price}
   if(ok)return{lu,cash:left}}return{lu:autoPickArr(r),cash:0}}
@@ -1854,7 +1857,7 @@ function seenHowto(){try{return localStorage.getItem('df-howto-v2')==='1'}catch(
 function markHowto(){try{localStorage.setItem('df-howto-v2','1')}catch(e){}}
 function route(){let v=(location.hash||'').replace(/^#p-/,'').replace(/^#/,''),toRules=v==='rules';if(toRules)v='howto';let psub='',goMarket=false;{const m=v.match(/^profile-(.+)$/);if(m){psub=m[1];v='profile'}}if(v==='market'){v='team';goMarket=true}if(v==='lobby')v='overview';if(!VIEWS[v])v='tournaments';VIEW=v;
   if((v==='tournaments'||v==='alltime')&&TOUR!==CUR)switchTour(CUR);
-  if(VIEWS[v].tour&&ANN()&&v!=='overview')v=VIEW='overview';
+  if(VIEWS[v].tour&&(ANN()||PASTV())&&v!=='overview')v=VIEW='overview';
   if(v==='profile'){PF.sub=psub;renderProfile()}
   document.documentElement.dataset.t=VIEWS[v].tour?TOUR:(v==='profile'&&pfSkin(psub))||'base';
   document.querySelectorAll('.view').forEach(el=>{const on=el.dataset.view===v;el.hidden=!on;if(on){el.classList.remove('v-in');void el.offsetWidth;el.classList.add('v-in')}});
@@ -1866,11 +1869,11 @@ function navTag(id){if(id==='lobby'){const t=lobbyShort();return`<span class="ta
 function myRank(){const W=world(),me=myTotal();let r=1;W.bots.forEach(b=>{if(b.tot>me)r++});return{rank:r,n:NBOTS+1}}
 function renderChrome(){
   const v=VIEWS[VIEW],grp=(h,items)=>`<div class="dgroup">${h?`<div class="gh">${h}</div>`:''}${items.map(([id,t])=>`<a class="dlink" href="#p-${id}" ${id===VIEW?'aria-current="page"':''}>${t}${navTag(id)}</a>`).join('')}</div>`;
-  $('drawer-nav').innerHTML=v.tour?grp(T().name,ANN()?NAV_TOUR.slice(0,1):NAV_TOUR)+grp('Общее',NAV_GEN)
+  $('drawer-nav').innerHTML=v.tour?grp(T().name,ANN()||PASTV()?[['overview',PASTV()?'Итоги турнира':'Обзор турнира']]:NAV_TOUR)+grp('Общее',NAV_GEN)
     :grp('',NAV_GEN)+`<div class="dgroup"><div class="gh">Ближайший турнир</div><a class="dlink" href="#p-overview" data-hm-enter="${CUR}">${TOURS[CUR].name}<span class="dlink-sub">${TOURS[CUR].dates}</span></a></div>`;
   $('crumbs').innerHTML=v.tour?`<a href="#p-tournaments">Главная</a><span class="sep">/</span>${VIEW==='overview'?`<span class="cur">${T().name}</span>`:`<a href="#p-overview">${T().name}</a><span class="sep">/</span><span class="cur">${v.t}</span>`}`:`<span class="cur">${v.t}</span>`;
   $('hdr-stats').innerHTML=`<a class="me-chip" href="#p-profile" ${VIEW==='profile'?'aria-current="page"':''} aria-label="Личный кабинет"><span class="me-ava" style="--h:${PR().hue}">${initials(PR().nick)}</span><span class="me-nick">${esc(PR().nick)}</span></a>`;
-  $('bottomnav').innerHTML=[['overview','Обзор'],['team','Состав'],['picks','Прогнозы'],['matches','Матчи'],['global','Рейтинг']].map(([id,t])=>`<a href="#p-${id}" ${id===VIEW?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg>${t}</a>`).join('');$('bottomnav').hidden=!v.tour||ANN()}
+  $('bottomnav').innerHTML=[['overview','Обзор'],['team','Состав'],['picks','Прогнозы'],['matches','Матчи'],['global','Рейтинг']].map(([id,t])=>`<a href="#p-${id}" ${id===VIEW?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg>${t}</a>`).join('');$('bottomnav').hidden=!v.tour||ANN()||PASTV()}
 function openDrawer(){$('drawer').classList.add('open');$('drawer').setAttribute('aria-hidden','false');$('scrim').hidden=false;$('burger').setAttribute('aria-expanded','true');const a=$('drawer').querySelector('a,button');a&&a.focus()}
 function closeDrawer(){$('drawer').classList.remove('open');$('drawer').setAttribute('aria-hidden','true');$('scrim').hidden=true;$('burger').setAttribute('aria-expanded','false')}
 $('burger').onclick=openDrawer;$('drawer-x').onclick=closeDrawer;$('scrim').onclick=closeDrawer;
@@ -1888,13 +1891,13 @@ function tourCard(id,status){const t=TOURS[id];
       <div class="date"><b>${t.day}</b><span>${t.mon}</span></div>
       <div><h3>${t.name}</h3><div class="meta">${t.dates} · ${t.prize} · ${teamsOf(id)} ${plural(teamsOf(id),'команда','команды','команд')}</div><div class="meta tc-st">${status}</div></div>
       <span class="btn primary go">Открыть</span></button>`}
-// прошедший турнир: на реальных данных (replay) — проигрывается по стадиям; прогресс в нём не идёт в сезон
-function pastStatus(t){let st;try{st=JSON.parse(localStorage.getItem(keyOf(t)))}catch(e){}const base=REPLAYS[t]?'Прошёл · настоящие матчи — можно проиграть по стадиям':'Прошёл · можно сыграть как демо';
-  return!st||!st.played?base:st.played>=nsOf(t)?'Прошёл · проигран до конца':base+' · сыграно '+st.played+' из '+nsOf(t)}
+// прошедший турнир (past: true): открывается экран итогов; участвовал ли игрок — по сохранённому прогрессу
+function pastStatus(t){let st;try{st=JSON.parse(localStorage.getItem(keyOf(t)))}catch(e){}
+  return'Прошёл · итоги и статистика'+(st&&st.played?' · ты участвовал':'')}
 function renderTournaments(){
   $('tour-list').innerHTML=`<h3 class="tl-h">Скоро</h3>${tourCard(CUR,'Первый турнир сезона · калибровка · '+tourStatus(CUR))}${tourCard('dreamleague',tourStatus('dreamleague'))}${tourCard('ewc','Даты не объявлены')}
-    <h3 class="tl-h">Прошли</h3>${tourCard('blast',pastStatus('blast'))}${tourCard('ti',pastStatus('ti'))}
-    <p class="note">PARI Universe — первый турнир сезона и калибровка: настоящие участники, расписание и формат, до старта играется симуляцией от рейтингов и цен из базы. DreamLeague Season 30 — анонс: фэнтези откроется после отборочных. BLAST Slam VIII прошёл — его можно проиграть на настоящих матчах; The International и EWC — демо на предварительных составах. Прошедшие турниры в сезон и лигу не идут.</p>`;
+    <h3 class="tl-h">Прошли</h3>${D_TOURS.tournaments.filter(t=>t.past&&REPLAYS[t.id]).map(t=>tourCard(t.id,pastStatus(t.id))).join('')}
+    <p class="note">PARI Universe — первый турнир сезона и калибровка: настоящие участники, расписание и формат, до старта играется симуляцией от рейтингов и цен из базы. DreamLeague Season 30 — анонс: фэнтези откроется после отборочных. У прошедших турниров — итоги: чемпион, группы и сетка, кого больше всего брали, лучшие игроки и твой состав. Прошедшие турниры в сезон и лигу не идут.</p>`;
   $('tour-list').querySelectorAll('[data-tour]').forEach(b=>b.onclick=()=>enterTour(b.dataset.tour));renderHomeHub()}
 
 function renderHero(){const t=T(),nT=teamsOf(TOUR),fl=(D_TOURS.formats[t.format]||{}).label||'';
@@ -1958,6 +1961,56 @@ function renderAnnounce(){const F=D_TOURS.formats[T().format];$('newbie').innerH
   $('timeline').innerHTML=F.stages.map((s,i)=>`<div class="step ${i===0?'next':''}"><span class="s1">${i===0?'Первая стадия':'Впереди'} · ${esc(s.date)}</span><span class="s2">${esc(s.name)}</span><span class="s3">${esc(s.meta)}</span></div>`).join('');
   $('dash').innerHTML=`<div class="dcard next"><div class="dh"><h3>Фэнтези</h3></div><div class="big" style="font-size:22px">Откроется, когда определятся все участники</div><div class="muted">${T().status_note||''}</div></div>`;
   renderTourInfo()}
+// ---------- прошедший турнир (past: true в tournaments.json): итоги вместо игры — чемпион, твой состав или «не участвовал»,
+// кого больше всего брали и лучшие игроки, группы и сетка плей-офф. Данные — выгрузка replay (настоящие серии и очки)
+const PASTV=()=>!!T().past;
+function pxTeam(tag){const R=RP(),tm=D_TEAMS.find(x=>x.tag===tag);return{name:(R&&R.teams&&R.teams[tag])||(tm&&tm.name)||tag,logo:tm&&tm.logo||null}}
+function pxSeries(){const R=RP(),m={};if(R)R.stages.forEach(st=>st.series.forEach(x=>{if(x.key)m[x.key]=x}));return m}
+const pxWin=x=>x?(x.wa>x.wb?x.a:x.b):null,pxLose=x=>x?(x.wa>x.wb?x.b:x.a):null;
+function pxNode(x,label){const row=(tag,sc,win)=>{const t=tag?pxTeam(tag):null;
+    return`<div class="bk-t ${x?(win?'win':'lose'):''}">${t&&t.logo?`<span class="tlogo"><img src="${t.logo}" alt="" decoding="async"></span>`:'<span class="tlogo bk-empty"></span>'}<span class="bk-n">${t?esc(t.name):'—'}</span>${x?`<b class="num">${sc}</b>`:''}</div>`};
+  if(!x)return`<div class="bk-node"><span class="bk-lab">${esc(label)}</span>${row(null)}${row(null)}</div>`;
+  return`<div class="bk-node"><span class="bk-lab">${esc(label)} · Bo${x.bo}</span>${row(x.a,x.wa,x.wa>x.wb)}${row(x.b,x.wb,x.wb>x.wa)}</div>`}
+// доля составов на старте турнира: в прототипе — по ботам с тем же выбором, что и в рейтинге турнира
+let PX_OWN=null;
+function pxOwn(){if(PX_OWN&&PX_OWN.t===TOUR)return PX_OWN.own;const r=mulberry32(4242),N=3000,own=new Array(P.length).fill(0),keep=BOT_W;
+  BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7)); // веса по стартовому рейтингу, как в buildWorld
+  for(let i=0;i<N;i++)botLineup(r).lu.forEach(id=>own[id]++);BOT_W=keep;PX_OWN={t:TOUR,own:own.map(v=>v/N)};return PX_OWN.own}function pxMine(){if(!S.played)return'<p class="muted" style="margin:0">Ты в этом турнире участия не принимал.</p>';
+  const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
+    const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'',1)}<div class="pt num" style="margin-left:44px">${fmt((RES[k].pts[id]||0)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
+  const tot='<tr><td><b>Итого</b></td>'+S.snaps.map((_,k)=>`<td class="num w">${fmt(stageScore(k))}</td>`).join('')+'</tr>';
+  return`<div class="pf-row" style="gap:24px;align-items:baseline"><span><b class="num" style="font-size:28px">${fmt(myTotal())}</b> <span class="muted">очков</span></span><span><b>${myRank().rank.toLocaleString('ru')}-е</b> <span class="muted">место из ${(NBOTS+1).toLocaleString('ru')}</span></span>${S.played<NS()?`<span class="muted">сыграно стадий: ${S.played} из ${NS()}</span>`:''}</div>
+  <div class="tbox"><table><thead><tr><th>Поз.</th>${S.snaps.map((_,i)=>`<th>${esc(STAGES[i].name)}</th>`).join('')}</tr></thead><tbody>${rows}${tot}</tbody></table></div>`}
+// группы GSL: стартовые матчи → матч победителей / проигравших → решающий; узлы — по ключам сетки из регламента (A-O1 … A-D)
+function pxGroups(){const R=RP(),m=pxSeries();if(!R||!R.groups||!Object.keys(R.groups).length)return'';
+  return`<div class="bk-groups">${Object.keys(R.groups).sort().map(g=>{const s=k=>m[g+'-'+k],first=pxWin(s('W')),second=pxWin(s('D')),out=[pxLose(s('L')),pxLose(s('D'))].filter(Boolean);
+    return`<section class="bk-group"><div class="bk-gh"><h3>Группа ${g}</h3><span class="pf-lab">GSL · Bo3</span></div><div class="bk-grow">
+      <div class="bk-gcol"><span class="pf-lab">Стартовые матчи</span>${pxNode(s('O1'),'Матч 1')}${pxNode(s('O2'),'Матч 2')}</div>
+      <div class="bk-gcol"><span class="pf-lab">Дальше</span>${pxNode(s('W'),'Матч победителей')}${pxNode(s('L'),'Матч проигравших')}</div>
+      <div class="bk-gcol"><span class="pf-lab">Решающий</span>${pxNode(s('D'),'За второе место')}</div>
+      <div class="bk-gcol bk-adv"><div class="bk-out"><span class="pf-lab">Итог группы</span><b>1-е · ${first?esc(pxTeam(first).name):'—'}</b><b>2-е · ${second?esc(pxTeam(second).name):'—'}</b><span class="muted" style="font-size:13px">Выбыли: ${out.map(t=>esc(pxTeam(t).name)).join(', ')||'—'}</span></div></div></div></section>`}).join('')}</div>`}
+// сетка плей-офф по ключам регламента; колонки идут парами (верхняя над нижней), как в прогнозах
+const PX_COLS={slam:[['Посев',['SM1','SM2']],['Last Chance',['LC1','LC2']],['Верхняя · 1/4',['UBQF1','UBQF2']],['Нижняя · 1/4',['LBQF1','LBQF2']],['Верхняя · 1/2',['UBSF1','UBSF2']],['Нижняя · 1/2',['LBSF']],['Финал верхней',['UBF']],['Финал нижней',['LBF']],['Гранд-финал',['GF']]],
+  pari:[['Верхняя · 1/4',['UBQF1','UBQF2','UBQF3','UBQF4']],['Нижняя · раунд 1',['LBR1-1','LBR1-2']],['Верхняя · 1/2',['UBSF1','UBSF2']],['Нижняя · 1/4',['LBQF1','LBQF2']],['Финал верхней',['UBF']],['Нижняя · 1/2',['LBSF']],['Гранд-финал',['GF']],['Финал нижней',['LBF']]]};
+function pxBracket(){const m=pxSeries(),cols=PX_COLS[FK];if(!cols)return'';
+  const col=([h,keys])=>`<div class="bk-col"><span class="pf-lab">${h}</span>${keys.map(k=>pxNode(m[k],m[k]&&m[k].label||k)).join('')}</div>`,st=[];
+  for(let i=0;i<cols.length;i+=2)st.push(`<div class="bk-stack">${col(cols[i])}${cols[i+1]?col(cols[i+1]):''}</div>`);
+  return`<div class="bk-board ${FK==='pari'?'bk-de8':''}" role="group" aria-label="Сетка плей-офф">${st.join('')}</div>`}
+function renderPast(){const R=RP(),m=pxSeries(),gf=m.GF;$('newbie').innerHTML='';$('dash').innerHTML='';
+  $('timeline').style.setProperty('--ns',STAGES.length);
+  $('timeline').innerHTML=STAGES.map(s=>`<div class="step done"><span class="s1">Сыграно · ${esc(s.date)}</span><span class="s2">${esc(s.name)}</span><span class="s3">${esc(s.meta)}</span></div>`).join('');
+  if(!R){$('tour-info').innerHTML='<p class="muted">Итоги этого турнира ещё не загружены.</p>';return}
+  const own=pxOwn(),popular=P.filter(p=>!p.tba).map(p=>({p,v:own[p.id]})).sort((a,b)=>b.v-a.v).slice(0,10);
+  const best=P.filter(p=>rpOf(p)).map(p=>{const x=rpOf(p);return{p,v:x.stages.reduce((a,s)=>a+s.pts,0)}}).sort((a,b)=>b.v-a.v).slice(0,10);
+  const list=(rows,val)=>`<div class="tbox"><table><tbody>${rows.map((x,i)=>`<tr><td class="r num">${i+1}</td><td>${who(x.p,'',1)}</td><td><span class="rp">${RS[x.p.role]}</span></td><td class="r num w">${val(x)}</td></tr>`).join('')}</tbody></table></div>`;
+  const groups=pxGroups();
+  $('tour-info').innerHTML=`${gf?`<div class="status-strip"><div><div class="big">Чемпион — ${esc(pxTeam(pxWin(gf)).name)}</div><div class="muted">Гранд-финал: ${esc(pxTeam(pxWin(gf)).name)} ${Math.max(gf.wa,gf.wb)}:${Math.min(gf.wa,gf.wb)} ${esc(pxTeam(pxLose(gf)).name)}</div></div></div>`:''}
+  <div class="sec-h"><div><h2>Твой состав</h2></div></div><div class="card" style="display:grid;gap:12px">${pxMine()}</div>
+  <div class="grid2"><div style="display:grid;gap:12px;align-content:start"><div class="sec-h"><div><h2>Кого больше всего брали</h2><p>Доля составов на старте турнира.</p></div></div>${list(popular,x=>Math.round(x.v*1000)/10+'%')}</div>
+    <div style="display:grid;gap:12px;align-content:start"><div class="sec-h"><div><h2>Лучшие игроки</h2><p>Очки фэнтези за весь турнир.</p></div></div>${list(best,x=>fmt(x.v))}</div></div>
+  ${groups?`<div class="sec-h"><div><h2>Групповой этап</h2></div></div>${groups}`:''}
+  <div class="sec-h"><div><h2>Плей-офф</h2></div></div>${pxBracket()}
+  <p class="note">Результаты, статистика и очки — настоящие (${esc(R.tournament.name)}, OpenDota). Доля составов в прототипе — по 3 000 ботам, в рабочей версии — по всем участникам.</p>`}
 function renderHowto(){const ex=P.find(p=>p.nick==='Yatoro');
   $('howto').innerHTML=`<div class="page-h"><div class="kicker">Туториал · 1 минута</div><h1>Как играть</h1><p>Собираете пятёрку реальных про-игроков, они набирают очки за свои матчи на турнире. Чем лучше играют ваши — тем выше вы в таблице.</p></div>
   <div class="steps">
@@ -2360,6 +2413,8 @@ function wireHowto(){const b=$('to-rules');if(b)b.onclick=()=>$('rules-h').scrol
 function render(){
   if(ANN()){renderTournaments();renderHero();renderAnnounce();renderProfile();renderAlltime();renderChrome();
     $('demo').innerHTML=`<div class="dl-row"><span class="dl">ТЕСТ</span><span class="muted" style="font-size:12px">${esc(T().name)}: фэнтези откроется, когда определятся участники</span></div>`;return}
+  if(PASTV()){renderTournaments();renderHero();renderPast();renderProfile();renderAlltime();renderChrome();
+    $('demo').innerHTML=`<div class="dl-row"><span class="dl">ТЕСТ</span><span class="muted" style="font-size:12px">${esc(T().name)}: турнир прошёл — открыты итоги</span></div>`;return}
   renderTimeline();renderBar();renderLineup();renderMarket();renderPoints();renderPicks();renderGlobal();renderTournaments();renderHero();renderOverview();renderTourInfo();renderProfile();renderAlltime();renderChrome();if(!rulesDone){renderRules();renderHowto();wireHowto();rulesDone=true}}
 let rulesDone=false;
 ['f-role','f-sort'].forEach(id=>$(id).onchange=renderMarket);$('f-q').oninput=renderMarket;

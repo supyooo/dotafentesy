@@ -15,8 +15,9 @@
   После любой правки данных: `python scripts/validate_data.py`.
 - **6 турниров** (`TOURS` из tournaments.json): The International 2026, BLAST Slam VIII (реальные данные), PARI Universe, EWC,
   PGL Wallachia S9, DreamLeague Season 30 (анонс).
-  На главной (с 15.10.2026): «Скоро» — PARI Universe (текущий раунд сезона, калибровка), DreamLeague S30, EWC; «Прошли» — BLAST Slam VIII
-  (реальные матчи, проигрывается по стадиям) и TI (демо). Пример сезона в кабинете убран — новый игрок начинает с нуля (docs/05).
+  На главной (с 15.10.2026): «Скоро» — PARI Universe (текущий раунд сезона, калибровка), DreamLeague S30, EWC; «Прошли» — турниры
+  с `past: true` и выгрузкой replay, сейчас BLAST Slam VIII: экран итогов (чемпион, группы, сетка, кого брали, лучшие игроки, твой состав —
+  docs/05). TI 2026 скрыт до разметки плей-офф. Пример сезона в кабинете убран — новый игрок начинает с нуля (docs/05).
   У каждого турнира своё оформление (`data-t`/`data-skin`), фирменная шапка (`renderHero`), заставка (`playIntro`)
   и экран перехода между стадиями (`tiStage`/`blStage`/`ewStage`/`walStage`/`dlStage`/`paStage`).
 - **Стартовая заставка «Сетка»** — `prototype/intro/df-intro.{js,css}` (`DFIntro.play('bracket')`), раз за сессию (`df-splash`).
@@ -42,7 +43,8 @@
   Картинка автора `image-14-104.jpg` (инфографика esports.ru) — справочная: в ней 7 рангов без Титана, медали мелкие на фоне.
 
 - **Турнир на реальных данных** (12.10.2026, до API — B6): поле `replay` в `tournaments.json` → `data/replay/<slug>.json`, выгрузка из базы
-  `pnpm --filter @df/worker cli export-replay blast-slam-8`. Сейчас так работает BLAST (`id: blast` = Slam VIII): «Сыграть стадию» берёт
+  `pnpm --filter @df/worker cli export-replay blast-slam-8` (в выгрузке также формат стадий и названия команд — для экрана итогов).
+  BLAST (`id: blast` = Slam VIII) с 15.10 — прошедший (`past: true`), показывает итоги; движок проигрывания остался: «Сыграть стадию» брал
   настоящие серии по паре команд в стадии (`runStage` → `realSeries`), очки игрока за стадию — из выгрузки (очки серии как у BLAST),
   рейтинг (docs/12, целым) и цена v1 (рейтинг + сила команды) — на старте и после каждой стадии (`applyTourData`, `computeDeltas`).
   Прогресс — в отдельном ключе localStorage (`keyOf` с именем выгрузки). Остальные турниры — прежняя симуляция.
