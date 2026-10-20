@@ -813,3 +813,10 @@
 {"at":"2026-10-20T22:04:40.466Z","ok":false,"error":"Error: 502 Bad Gateway ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-20T22:05:03.087Z","ok":false,"error":"Error: 404 Not Found ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-20T22:05:25.701Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:05:48.363Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:06:10.964Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:06:18.114Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:06:25.347Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:06:32.532Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:06:39.693Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:06:46.870Z","ok":true,"players":[]}
