@@ -801,3 +801,7 @@
 {"at":"2026-10-20T22:01:22.266Z","ok":true,"players":[]}
 {"at":"2026-10-20T22:01:29.432Z","ok":true,"players":[]}
 {"at":"2026-10-20T22:01:36.545Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:01:43.698Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:01:50.853Z","ok":true,"players":[]}
+{"at":"2026-10-20T22:01:57.977Z","ok":false,"error":"Error: 502 Bad Gateway ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:02:20.590Z","ok":false,"error":"Error: 502 Bad Gateway ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
