@@ -835,3 +835,6 @@
 {"at":"2026-10-20T22:10:40.830Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-20T22:11:03.426Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
 {"at":"2026-10-20T22:11:26.049Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:11:48.634Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:12:11.227Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
+{"at":"2026-10-20T22:12:33.811Z","ok":false,"error":"Error: 500 Internal Server Error ← https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v1/?key=***&league_id=19102","players":[]}
