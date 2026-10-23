@@ -763,6 +763,7 @@ button.bk-t{cursor:pointer}button.bk-t:hover{background:color-mix(in srgb,var(--
   <section class="view" data-view="profile" hidden><div id="profile"></div></section>
   <section class="view" data-view="alltime" hidden><div class="page-h"><h1>Рейтинг сезона</h1><p>Первый турнир — калибровка: место в общей таблице определяет лигу. Дальше ты соревнуешься только со своей группой — 30 человек твоей лиги: верхние 6 по итогам турнира поднимаются на лигу выше, нижние 6 опускаются.</p></div><div class="panel" id="panel-alltime"></div></section>
   <section class="view" data-view="howto" hidden><div id="howto"></div><div class="page-h" id="rules-h"><h2 class="h2big">Подробные правила</h2><p>Очки, коэффициенты позиций и оба режима игры.</p></div><div class="panel" id="panel-rules"></div></section>
+  <section class="view" data-view="stats" hidden><div class="page-h"><h1>Статистика</h1><p>Активность игроков — для отчётов организаторам и партнёрам. Только сводные цифры, без личных данных. Видна администраторам группы.</p></div><div class="panel" id="panel-stats"></div></section>
   <p class="fan-note">Неофициальный фан-проект. Не связан с Valve, организаторами турниров и командами; названия команд, турниров и ники игроков — только для указания на реальные события. Dota 2 — товарный знак Valve Corporation.</p>
 </main>
 
@@ -773,27 +774,39 @@ button.bk-t{cursor:pointer}button.bk-t:hover{background:color-mix(in srgb,var(--
 splash();
 // ---------- вход через Telegram и подписка на канал (functions/api, docs/10 «Вход и сохранение»). Без API (локальный
 // python serve.py) или пока вход не настроен (config.enabled=false) — играем без входа, прогресс только в браузере
+// ---------- журнал событий для статистики (functions/api: events, страница «Статистика» у администраторов группы).
+// Обезличенно: номер браузера dfv (не уходит в прогресс игрока), после входа — игрок; ни имён, ни username. Без API — не пишется
+const VID=(()=>{try{let v=localStorage.getItem('dfv');if(!v){v=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);localStorage.setItem('dfv',v)}return v}catch(e){return null}})();
+const EVQ=[];let EV_ON=false,EV_T=null,EV_VIEW='';
+function track(type,data,tour){if(!EV_ON)return;let t=tour;if(t===undefined)try{t=TOUR}catch(e){}
+  EVQ.push({type,tour:t,data});clearTimeout(EV_T);EV_T=setTimeout(flushEv,EVQ.length>=40?0:4000)}
+function flushEv(){if(!EVQ.length)return;const events=EVQ.splice(0,60);
+  fetch('/api/events',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({vid:VID,events}),keepalive:true}).catch(()=>{})}
+addEventListener('pagehide',flushEv);document.addEventListener('visibilitychange',()=>{if(document.hidden)flushEv()});
 async function authGate(){let cfg=null;
   try{const r=await fetch('/api/config',{cache:'no-store'});if(r.ok&&/json/.test(r.headers.get('content-type')||''))cfg=await r.json()}catch(e){}
+  if(cfg){EV_ON=true;let ref='';try{const h=document.referrer&&new URL(document.referrer).hostname;ref=h&&h!==location.hostname?h:''}catch(e){}
+    track('visit',{ref:ref||null,mobile:matchMedia('(max-width:760px)').matches,lang:navigator.language||null,hash:location.hash||null},null)}
   if(!cfg||!cfg.enabled)return{mode:'off'};
   for(;;){let me=null;try{me=await(await fetch('/api/me',{cache:'no-store'})).json()}catch(e){}
-    if(me&&me.auth&&me.subscribed){const g=document.getElementById('gate');if(g)g.remove();await pullState();startSync();return{mode:'on',cfg}}
+    if(me&&me.auth&&me.subscribed){const g=document.getElementById('gate');if(g)g.remove();await pullState();startSync();return{mode:'on',cfg,admin:!!me.admin}}
     await gateScreen(cfg,me)}}
 const gEsc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // экран входа: сначала «Войти через Telegram» (виджет), потом, если нет подписки, — ссылка на канал и «Проверить подписку»
 function gateScreen(cfg,me){return new Promise(done=>{let el=document.getElementById('gate');if(!el){el=document.createElement('div');el.id='gate';el.className='gate';document.body.appendChild(el)}
   // название — TG_TITLE (у приватной группы username нет), ссылка — приглашение TG_LINK или t.me/<username>
   const ch=gEsc(cfg.title||'@'+cfg.channel),link=cfg.link||'https://t.me/'+encodeURIComponent(cfg.channel),brand='<div class="gate-brand"><svg class="brand-mark" viewBox="0 0 26 20" aria-hidden="true"><path d="M1 3H8V10H15M1 17H8V10"/><circle cx="20" cy="10" r="3.6"/></svg><span>DOTA FANTASY</span></div>';
+  track('gate',{stage:me&&me.auth?'subscribe':'login'},null);
   if(me&&me.auth){el.innerHTML=`<div class="gate-card">${brand}<h1>Подпишись на канал</h1><p>Играть на сайте могут подписчики «<a href="${link}" target="_blank" rel="noopener">${ch}</a>». Подпишись и вернись сюда.</p>
       <div class="gate-act"><a class="btn primary" href="${link}" target="_blank" rel="noopener">Открыть «${ch}»</a><button class="btn" type="button" id="gate-check">Я подписался — проверить</button></div>
       <p class="gate-msg" id="gate-msg" role="status"></p><button class="gate-out" type="button" id="gate-out">Войти другим аккаунтом</button></div>`;
-    el.querySelector('#gate-check').onclick=()=>{el.querySelector('#gate-msg').textContent='Проверяем…';setTimeout(done,300)};
+    el.querySelector('#gate-check').onclick=()=>{track('gate_check',null,null);flushEv();el.querySelector('#gate-msg').textContent='Проверяем…';setTimeout(done,300)};
     el.querySelector('#gate-out').onclick=async()=>{await fetch('/api/logout',{method:'POST'});done()};return}
   el.innerHTML=`<div class="gate-card">${brand}<h1>Вход через Telegram</h1><p>Фэнтези по тир-1 Dota 2 — для подписчиков «<a href="${link}" target="_blank" rel="noopener">${ch}</a>». Войди через Telegram: проверим подписку, а очки, составы и прогнозы сохранятся за тобой.</p>
     <div class="gate-act" id="gate-tg"></div><p class="gate-msg" id="gate-msg" role="status"></p>
-    <p class="gate-note">Мы не храним имя и username: только обезличенный номер игрока, чтобы сохранить прогресс.</p></div>`;
+    <p class="gate-note">Мы не храним имя и username: только обезличенный номер игрока — чтобы сохранить прогресс и считать общую статистику игры.</p></div>`;
   window.dfTgAuth=async u=>{const m=el.querySelector('#gate-msg');m.textContent='Проверяем подписку…';
-    try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(u)}),j=await r.json();if(!r.ok){m.textContent=j.error||'Не получилось войти';return}done()}catch(e){m.textContent='Нет связи с сервером — попробуй ещё раз'}};
+    try{const r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...u,vid:VID})}),j=await r.json();if(!r.ok){m.textContent=j.error||'Не получилось войти';return}done()}catch(e){m.textContent='Нет связи с сервером — попробуй ещё раз'}};
   const sc=document.createElement('script');sc.async=true;sc.src='https://telegram.org/js/telegram-widget.js?22';
   sc.setAttribute('data-telegram-login',cfg.bot);sc.setAttribute('data-size','large');sc.setAttribute('data-radius','4');sc.setAttribute('data-onauth','dfTgAuth(user)');
   el.querySelector('#gate-tg').appendChild(sc)})}
@@ -810,8 +823,8 @@ function startSync(){const si=Storage.prototype.setItem,ri=Storage.prototype.rem
 function syncSoon(){SYNC.dirty=true;clearTimeout(SYNC.t);SYNC.t=setTimeout(pushState,1500)}
 async function pushState(){const data={};Object.keys(localStorage).filter(k=>k.startsWith('df-')).forEach(k=>data[k]=localStorage.getItem(k));
   let picks=null;try{picks={tour:TOUR,acc:ROLES.map(r=>S.lineup[r]).filter(x=>x!=null).map(id=>P[id].acc).filter(Boolean)}}catch(e){}
-  SYNC.dirty=false;try{const r=await fetch('/api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({data,picks}),keepalive:true});if(!r.ok)SYNC.dirty=true}catch(e){SYNC.dirty=true}}
-async function logout(){await fetch('/api/logout',{method:'POST'}).catch(()=>{});Object.keys(localStorage).filter(k=>k.startsWith('df-')).forEach(k=>localStorage.removeItem(k));location.reload()}
+  SYNC.dirty=false;try{const r=await fetch('/api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({data,picks}),keepalive:true});if(!r.ok)SYNC.dirty=true;else if(picks&&typeof loadOwn==='function')loadOwn(picks.tour)}catch(e){SYNC.dirty=true}}
+async function logout(){track('logout',null);flushEv();await fetch('/api/logout',{method:'POST'}).catch(()=>{});Object.keys(localStorage).filter(k=>k.startsWith('df-')).forEach(k=>localStorage.removeItem(k));location.reload()}
 const AUTH=await authGate();
 const ROLES=['carry','mid','off','soft','hard'];
 const RN={carry:'Керри',mid:'Мид',off:'Оффлейн',soft:'Саппорт 4',hard:'Саппорт 5'};
@@ -1070,10 +1083,11 @@ function liveSync(done){S.lockAt=S.lockAt||{};S.pkLock=S.pkLock||{};if(typeof SW
   for(let k=0;k<done;k++)if(!S.snaps[k])S.snaps[k]={lineup:Object.fromEntries(ROLES.map(r=>[r,null])),captain:null,tc:false,penalty:0,transfers:0,missed:true};
   if(S.played!==done){S.played=done;S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash}}
   S.locked=!!S.snaps[done]}
-// очки моего состава за стадию — по отрезкам владения: игрок приносит очки серий, начавшихся, пока он в составе
-// (в живом режиме — с фиксации; после замены стендина — прежний до замены, новый после). Без живых данных — очки стадии целиком
-function snapEntries(k){const sn=S.snaps[k];if(!sn)return[];if(sn.hist)return sn.hist;const t=(S.lockAt||{})[k];
-  return ROLES.filter(r=>sn.lineup[r]!=null).map(r=>({id:sn.lineup[r],role:r,from:t??null,to:null,cap:sn.lineup[r]===sn.captain}))}
+// очки моего состава за стадию — по отрезкам владения. Зафиксированный состав получает очки за всю стадию, включая серии,
+// сыгранные до фиксации (решение автора 23.10.2026, тестовый прогон PARI); после замены стендина — прежний игрок до замены,
+// новый после (иначе замену можно было бы делать задним числом). Время фиксации хранится в S.lockAt — для статистики
+function snapEntries(k){const sn=S.snaps[k];if(!sn)return[];if(sn.hist)return sn.hist;
+  return ROLES.filter(r=>sn.lineup[r]!=null).map(r=>({id:sn.lineup[r],role:r,from:null,to:null,cap:sn.lineup[r]===sn.captain}))}
 function ptsWin(k,id,from,to){const R=RES[k];if(!R)return 0;if(!R.ser)return R.pts[id]||0;
   return r1(R.ser.reduce((s,x)=>s+((from==null||x.start>=from)&&(to==null||x.start<to)?(x.pts[id]||0):0),0))}
 function myPts(k,id){return r1(snapEntries(k).filter(e=>e.id===id).reduce((s,e)=>s+ptsWin(k,id,e.from,e.to),0))}
@@ -1091,7 +1105,7 @@ function doSwap(newId){const k=S.played,sn=S.snaps[k],{role,out}=SWAP,now=Date.n
   const e=sn.hist.find(x=>x.id===out&&x.to==null),cap=e?e.cap:false;if(e)e.to=now;
   sn.hist.push({id:newId,role,from:now,to:null,cap});sn.lineup[role]=newId;if(sn.captain===out)sn.captain=newId;sn.swapped=[...(sn.swapped||[]),out];
   S.cash=r1(S.cash+curP(P[out])-curP(p));S.lineup[role]=newId;if(S.captain===out)S.captain=newId;
-  SWAP=null;save();render();toast(`Замена: ${P[out].nick} → ${p.nick}. Очки ${p.nick} — с серий, начавшихся после ${hhmm(now)}`)}
+  track('swap',{stage:k,out:P[out].acc,in:p.acc,role});SWAP=null;save();render();toast(`Замена: ${P[out].nick} → ${p.nick}. Очки ${p.nick} — с серий, начавшихся после ${hhmm(now)}`)}
 const hhmm=iso=>{try{return new Date(iso).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
 // Динамика после каждой стадии: рейтинг ±3 по очкам за карту (среднее по позиции = 10),
 // цена +0.5 за ≥12 оч./карту, −0.5 за ≤8, ещё −0.5 если команда вылетела на этой стадии.
@@ -1180,8 +1194,8 @@ function reason(p){if(p.tba)return'Игрок ещё не объявлен';if(S
   if(S.locked)return'Состав зафиксирован до следующей стадии';if(!aliveNow().has(p.team))return'Команда выбыла';
   const cur=S.lineup[p.role];if(ROLES.filter(k=>k!==p.role&&S.lineup[k]!=null&&P[S.lineup[k]].team===p.team).length>=MAX_TEAM)return'Не больше 2 игроков одной команды';
   if(S.cash+(cur!=null?curP(P[cur]):0)-curP(p)<-1e-9)return'Не хватает денег в банке';return''}
-function pick(id){const p=P[id];if(reason(p))return;if(SWAP&&S.locked)return doSwap(id);const cur=S.lineup[p.role];snapLu(cur!=null?`${P[cur].nick} → ${p.nick}`:`взят ${p.nick} за ${fmt(curP(p))}`);S.cash=r1(S.cash+(cur!=null?curP(P[cur]):0)-curP(p));S.lineup[p.role]=id;if(S.captain===cur)S.captain=null;flash='';save();render()}
-function drop(role){const id=S.lineup[role];if(id==null||S.locked)return;snapLu(`убран ${P[id].nick}, +${fmt(curP(P[id]))} в банк`);S.cash=r1(S.cash+curP(P[id]));if(S.captain===id)S.captain=null;S.lineup[role]=null;save();render()}
+function pick(id){const p=P[id];if(reason(p))return;if(SWAP&&S.locked)return doSwap(id);track('pick',{acc:p.acc,role:p.role,price:curP(p),out:S.lineup[p.role]!=null?P[S.lineup[p.role]].acc:null,stage:S.played});const cur=S.lineup[p.role];snapLu(cur!=null?`${P[cur].nick} → ${p.nick}`:`взят ${p.nick} за ${fmt(curP(p))}`);S.cash=r1(S.cash+(cur!=null?curP(P[cur]):0)-curP(p));S.lineup[p.role]=id;if(S.captain===cur)S.captain=null;flash='';save();render()}
+function drop(role){const id=S.lineup[role];if(id==null||S.locked)return;track('drop',{acc:P[id].acc,role,stage:S.played});snapLu(`убран ${P[id].nick}, +${fmt(curP(P[id]))} в банк`);S.cash=r1(S.cash+curP(P[id]));if(S.captain===id)S.captain=null;S.lineup[role]=null;save();render()}
 let flash='',flashGo='',confirmReset=false;
 function play(){if(S.played>=NS())return;
   flashGo='';
@@ -1194,7 +1208,7 @@ function play(){if(S.played>=NS())return;
   L().snaps.push(L().rosters.map(r=>({...r})));
   RES.push(runStage(k,S.seed,CTX));computeDeltas();S.played++;UNDO=[];PKV.stage=null;S.locked=false;confirmLock=false;S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash};toast('Сыграно: '+STAGES[k].name);closeDrawer();stageFx(STAGES[k].name);flash='';lbFlash={t:'',ok:false};
   save();render()}
-function reset(){if(!confirmReset){confirmReset=true;return renderDemo()}confirmReset=false;confirmLock=false;S=fresh();UNDO=[];replay();save();render()}
+function reset(){if(!confirmReset){confirmReset=true;return renderDemo()}confirmReset=false;track('reset',{stage:S.played});confirmLock=false;S=fresh();UNDO=[];replay();save();render()}
 
 // ---------- render helpers
 const $=id=>document.getElementById(id);
@@ -1242,7 +1256,7 @@ function renderBar(){const sp=spent(),tr=transfers(),pen=penalty(),done=S.played
   <div class="metric"><span class="l">Мои очки</span><span class="v">${fmt(myTotal())}</span></div>
   <span class="spacer"></span>
   <button class="chip" data-act="tc" aria-pressed="${S.tcArmed}" ${S.tcUsed!=null||done||S.locked?'disabled':''} title="${S.locked?'Состав зафиксирован до следующей стадии':'Капитан получает ×3 вместо ×2 на одну стадию'}">${S.tcUsed!=null?'Тройной капитан использован':'Тройной капитан'}</button>`;
-  document.querySelectorAll('.bar-slot').forEach(el=>{el.innerHTML=html;const tc=el.querySelector('[data-act=tc]');if(tc)tc.onclick=()=>{if(S.locked)return;S.tcArmed=!S.tcArmed;save();render()}});
+  document.querySelectorAll('.bar-slot').forEach(el=>{el.innerHTML=html;const tc=el.querySelector('[data-act=tc]');if(tc)tc.onclick=()=>{if(S.locked)return;S.tcArmed=!S.tcArmed;track('tc',{armed:S.tcArmed,stage:S.played});save();render()}});
   renderDemo()}
 // демо-панель: симуляция не часть продукта, поэтому вынесена отдельно
 // тестовая панель: временно, пока стадии не идут по реальному расписанию
@@ -1268,7 +1282,7 @@ function renderLineup(){const alive=aliveNow(),last=S.played?RES[S.played-1]:nul
     return card(p,{cap,capLabel:S.tcArmed?'C×3':'C×2',out:!alive.has(p.team),
       stats:`<span>${fmt(curP(p))} ${dlt(lastDP(p),1)}</span><span>${fmt(totalPts(id))} оч.${lp!=null?' <span class="muted">+'+fmt(lp)+'</span>':''}</span>`,
       acts:`<button data-cap="${id}" aria-pressed="${cap}" title="${S.locked?'Состав зафиксирован':'Капитан'}" ${S.locked?'disabled':''}>C</button>${swapReason(id)?`<button data-swap="${role}" class="go" title="${esc(swapReason(id))} — можно бесплатно заменить">Заменить · стендин</button>`:`<button data-find="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Заменить</button>`}<button data-drop="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Убрать</button>`})}).join('');
-  $('lineup').querySelectorAll('[data-cap]').forEach(b=>b.onclick=()=>{const id=+b.dataset.cap;if(S.locked||S.captain===id)return;snapLu('капитан '+P[id].nick);S.captain=id;save();render()});renderUndo();
+  $('lineup').querySelectorAll('[data-cap]').forEach(b=>b.onclick=()=>{const id=+b.dataset.cap;if(S.locked||S.captain===id)return;snapLu('капитан '+P[id].nick);S.captain=id;track('captain',{acc:P[id].acc,stage:S.played});save();render()});renderUndo();
   $('lineup').querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>drop(b.dataset.drop));
   $('lineup').querySelectorAll('[data-find]').forEach(b=>b.onclick=()=>findRole(b.dataset.find));
   $('lineup').querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>{const role=b.dataset.swap;SWAP={role,out:S.lineup[role]};findRole(role)})}
@@ -1284,15 +1298,16 @@ function lockLineup(){if(S.locked||S.played>=NS()||lockBlocker())return;
   // (тестовый прогон: можно зафиксировать и после старта стадии — сыгранное до фиксации не засчитывается)
   if(LIVEV()){const k=S.played;S.snaps[k]={lineup:{...S.lineup},captain:S.captain,tc:S.tcArmed,penalty:penalty(),transfers:transfers()};
     S.lockAt=S.lockAt||{};S.lockAt[k]=Date.now();if(S.tcArmed){S.tcUsed=k;S.tcArmed=false}}
+  track('lock',{stage:S.played,lineup:ROLES.map(r=>S.lineup[r]!=null?P[S.lineup[r]].acc:null),captain:S.captain!=null?P[S.captain].acc:null,cash:S.cash,tc:!!(S.snaps[S.played]||{}).tc,started:!!RES[S.played]});
   S.locked=true;confirmLock=false;UNDO=[];save();render();
-  toast(LIVEV()?'Состав зафиксирован: очки пойдут с серий, которые начнутся после этого':'Состав зафиксирован до стадии «'+STAGES[S.played].name+'»')}
+  toast(LIVEV()?'Состав зафиксирован: очки — за всю стадию, включая уже сыгранные серии':'Состав зафиксирован до стадии «'+STAGES[S.played].name+'»')}
 function renderLock(){const el=$('lock-bar');if(!el)return;if(S.played>=NS()){el.hidden=true;el.innerHTML='';return}
   const st=STAGES[S.played].name;el.hidden=false;
   const lv=LIVEV(),at=lv&&(S.lockAt||{})[S.played];
-  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован${at?' · '+hhmm(at):''}</span><b>${LOCK_IC}${lv?'На стадию «'+esc(st)+'» — до её конца не изменить':'До стадии «'+esc(st)+'» изменить нельзя'}</b><span class="muted" style="font-size:14px">${lv?'Очки идут за серии, начавшиеся после фиксации. Замены откроются, когда стадия закончится.':'Замены, капитан и «Тройной капитан» откроются после этой стадии.'}</span>${(()=>{const sw=ROLES.map(r=>S.lineup[r]).filter(id=>swapReason(id));return sw.length?`<span class="ub-warn">${sw.map(id=>esc(P[id].nick)+' — '+esc(swapReason(id))).join('; ')}. Его можно бесплатно заменить на игрока той же позиции: кнопка «Заменить · стендин» на карточке.</span>`:''})()}</div></div>`;return}
+  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован${at?' · '+hhmm(at):''}</span><b>${LOCK_IC}${lv?'На стадию «'+esc(st)+'» — до её конца не изменить':'До стадии «'+esc(st)+'» изменить нельзя'}</b><span class="muted" style="font-size:14px">${lv?'Очки — за всю стадию, включая уже сыгранные серии. Замены откроются, когда стадия закончится.':'Замены, капитан и «Тройной капитан» откроются после этой стадии.'}</span>${(()=>{const sw=ROLES.map(r=>S.lineup[r]).filter(id=>swapReason(id));return sw.length?`<span class="ub-warn">${sw.map(id=>esc(P[id].nick)+' — '+esc(swapReason(id))).join('; ')}. Его можно бесплатно заменить на игрока той же позиции: кнопка «Заменить · стендин» на карточке.</span>`:''})()}</div></div>`;return}
   const why=lockBlocker();
   // идущая стадия уже началась (тестовый прогон): засчитаются только серии, которые начнутся после фиксации
-  const late=lv&&RES[S.played],hint=late?`Стадия «${esc(st)}» уже идёт: очки пойдут за серии, которые начнутся после фиксации. До конца стадии состав не изменить.`
+  const late=lv&&RES[S.played],hint=late?`Стадия «${esc(st)}» уже идёт: после фиксации состав получит очки за всю стадию, включая уже сыгранные серии. До конца стадии состав не изменить.`
     :`После фиксации состав, капитан и «Тройной капитан» не меняются до стадии «${esc(st)}».`;
   el.innerHTML=`<div class="ub"><div class="ub-t"><span class="pf-lab">${confirmLock?'Точно фиксируем?':'Состав готов?'}</span><b>${confirmLock?(late?'До конца стадии «'+esc(st)+'» состав не изменить — ни замен, ни капитана':'До стадии «'+esc(st)+'» состав не изменить — ни замен, ни капитана'):'Зафиксируйте состав, когда закончите'}</b>${why?`<span class="ub-warn">${why}</span>`:`<span class="muted" style="font-size:14px">${hint}</span>`}</div>
   <div class="ub-a">${confirmLock?`<button class="btn primary" type="button" data-lock-yes>${LOCK_IC}Да, зафиксировать</button><button class="btn" type="button" data-lock-no>Отмена</button>`:`<button class="btn primary" type="button" data-lock ${why?'disabled':''}>${LOCK_IC}Зафиксировать состав</button>`}</div></div>`;
@@ -1419,7 +1434,7 @@ function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S
       const mineN=lg.maps.length?lg.maps[0].ms.filter(([id])=>mine.has(id)).length:0;
       return h+`<details class="mc-ser"><summary><span class="mc-t ${!lg.live&&lg.wa>lg.wb?'w':''}">${esc(tn(lg.a))}</span><span class="mc-sc">${lg.wa}:${lg.wb}</span><span class="mc-t r ${!lg.live&&lg.wb>lg.wa?'w':''}">${esc(tn(lg.b))}</span><span class="mc-meta">${lg.live?(liveGameFor(x.a,x.b)?liveGameTxt(liveGameFor(x.a,x.b),x.a===TEAMS[lg.a].tag?x.a:x.b,lg.wa+lg.wb):'<span class="badge win">идёт</span>'):''}${mineN?`<span class="pf-lab" style="color:var(--accent)">твоих: ${mineN}</span>`:''}${mcStreamLink(i,!lg.live)}<span class="mc-open">Карты ▾</span></span></summary>
         ${lg.maps.map((m,j)=>`<div class="mc-map"><div class="pf-lab">Карта ${j+1} · победа ${esc(tn(m.aw?lg.a:lg.b))}${m.tier!=='parsed'?' · очки предварительные: ждём разбор реплея':''}</div>${mcMapTable(m,mine,sn?sn.captain:S.captain,sel)}</div>`).join('')}</details>`}).join('')
-      +`<p class="note">Карта появляется через несколько минут после конца (OpenDota); идущую карту видно только после завершения. ${(S.lockAt||{})[sel]?'Твои очки — за серии, начавшиеся после фиксации состава ('+esc(hhmm(S.lockAt[sel]))+').':'Состав на эту стадию не зафиксирован — твоих очков пока нет.'}</p>`;
+      +`<p class="note">Карта появляется через несколько минут после конца (OpenDota); идущую карту видно только после завершения. ${S.snaps[sel]?'Твой состав зафиксирован '+esc(hhmm((S.lockAt||{})[sel]))+' — очки за всю стадию.':'Состав на эту стадию не зафиксирован — зафиксируй, и очки начислятся за всю стадию.'}</p>`;
   }else if(sel<S.played){const R=RES[sel],sn=S.snaps[sel],mine=new Set(ROLES.map(k=>sn.lineup[k]).filter(x=>x!=null));let lr='';
     body=R.log.map((x,i)=>{if(!x)return'';const h=x.round!==lr?`<div class="mc-round">${esc(x.round)}</div>`:'';lr=x.round;
       const mineN=x.maps[0].ms.filter(([id])=>mine.has(id)).length;
@@ -1483,11 +1498,37 @@ function renderRules(){if(RP())return renderRulesReal(RP());const rows=[['Уби
   ${pkRules()}`}
 const pkRules=()=>`<div class="card"><h3>Прогнозы и медали</h3><ul class="plain"><li>Каждый матч турнира: +1 за победителя, ещё +1 за точный счёт. Дальние матчи стадии — матч победителей, решающий, полуфиналы, нижняя сетка, гранд-финал — прогнозируются сразу, по твоим же прогнозам на предыдущие матчи, как в сетке; точный счёт засчитывается, если угадана и пара. Кто выходит из группы — видно по прогнозам на её матчи.</li><li>Прогнозы стадии закрываются с её стартом. Пустой прогноз — 0 баллов.</li><li>Максимум за турнир — ${PK_MAX}. Медаль от доли максимума: ${PK_MED.map(m=>m[0].toLowerCase()+' от '+Math.round(m[2]*100)+'%').join(', ')}.</li><li>Прогнозы не дают очков фэнтези и не влияют на лигу сезона.</li></ul></div>`;
 
+// ---------- статистика для администраторов группы (/api/stats): посетители и игроки по дням, воронка входа, удержание,
+// источники, кого берут и в капитаны, прогнозы аудитории; только агрегаты
+const accNick=acc=>{const p=D_PLAYERS.find(x=>String(x.account_id)===String(acc));return p?p.nick:String(acc)};
+async function renderStats(){const el=$('panel-stats');if(!el)return;
+  if(!AUTH||!AUTH.admin){el.innerHTML='<p class="muted">Статистика доступна администраторам группы.</p>';return}
+  el.innerHTML='<p class="muted">Загружаем…</p>';let d;try{const r=await fetch('/api/stats?days=14',{cache:'no-store'});d=await r.json();if(!r.ok)throw new Error(d.error)}catch(e){el.innerHTML=`<p class="muted">Не получилось загрузить: ${esc(e.message||'')}</p>`;return}
+  const t=d.totals||{},f=d.funnel||{},rt=d.retention||{},pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  const tile=(l,v,s2)=>`<div class="tile"><span class="l">${l}</span><span class="v num">${v??0}</span>${s2?`<span class="s">${s2}</span>`:''}</div>`;
+  const tbl=(head,rows)=>rows.length?`<div class="tbox"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<p class="muted">Пока нет данных.</p>';
+  const byTour=(rows,f2)=>{const g={};rows.forEach(r=>{(g[r.tour]=g[r.tour]||[]).push(r)});return Object.entries(g).map(([tour,rs])=>`<h3 style="margin:10px 0 6px">${esc((TOURS[tour]||{}).name||tour)}</h3>${f2(rs)}`).join('')||'<p class="muted">Пока нет данных.</p>'};
+  el.innerHTML=`<div class="tiles">${tile('Посетители',t.visitors,'уникальные браузеры')}${tile('Игроки',t.players,'вошли через Telegram')}${tile('Зафиксировали состав',t.locked)}${tile('Делали прогнозы',t.predictors)}</div>
+  <div class="sec-h"><div><h2>Воронка за ${d.days} дней</h2></div></div>
+  ${tbl(['Шаг','Браузеров','Доля'],[['Зашли на сайт',f.visited||0,'100%'],['Увидели вход',f.saw_login||0,pct(f.saw_login,f.visited)],['Вошли через Telegram',f.logged_in||0,pct(f.logged_in,f.visited)],['Подписаны на группу',f.subscribed||0,pct(f.subscribed,f.visited)]])}
+  <div class="sec-h"><div><h2>По дням (мск)</h2></div></div>
+  ${tbl(['День','Посетители','Игроки','Фиксации','Прогнозы','Событий'],(d.daily||[]).map(x=>[x.d,x.visitors,x.players,x.locks,x.predictions,x.events]))}
+  <div class="grid2"><div style="display:grid;gap:12px"><div class="sec-h"><div><h2>Удержание</h2></div></div>
+    ${tbl(['Игроков','Заходили 2+ дня','3+ дня'],[[rt.players||0,(rt.two_plus_days||0)+' · '+pct(rt.two_plus_days,rt.players),(rt.three_plus_days||0)+' · '+pct(rt.three_plus_days,rt.players)]])}
+    <div class="sec-h"><div><h2>Источники</h2></div></div>${tbl(['Откуда','Посетители'],(d.sources||[]).map(x=>[esc(x.ref),x.visitors]))}
+    <div class="sec-h"><div><h2>Устройства</h2></div></div>${tbl(['Устройство','Посетители'],(d.devices||[]).map(x=>[x.device,x.visitors]))}</div>
+  <div style="display:grid;gap:12px"><div class="sec-h"><div><h2>Разделы</h2></div></div>${tbl(['Раздел','Просмотров'],(d.views||[]).map(x=>[esc((VIEWS[x.view]||{}).t||x.view),x.n]))}
+    <div class="sec-h"><div><h2>Действия</h2></div></div>${tbl(['Событие','Раз','Кто'],(d.events_by_type||[]).map(x=>[x.type,x.n,x.who]))}</div></div>
+  <div class="sec-h"><div><h2>Кого берут в состав</h2><p>Текущие составы игроков.</p></div></div>${byTour(d.picks||[],rs=>tbl(['Игрок','Составов'],rs.slice(0,15).map(x=>[esc(accNick(x.acc)),x.n])))}
+  <div class="sec-h"><div><h2>Капитаны</h2><p>По фиксациям состава.</p></div></div>${byTour((d.captains||[]).filter(x=>x.acc!=null),rs=>tbl(['Капитан','Игроков'],rs.slice(0,10).map(x=>[esc(accNick(x.acc)),x.n])))}
+  <div class="sec-h"><div><h2>Прогнозы аудитории</h2><p>Последний выбор каждого игрока по серии: кого считают фаворитом.</p></div></div>${byTour(d.predictions||[],rs=>{const g={};rs.forEach(x=>{(g[x.q]=g[x.q]||[]).push(x)});return tbl(['Серия','Выбор','Голосов'],Object.entries(g).flatMap(([q,xs])=>{const tot=xs.reduce((a,x)=>a+x.n,0);return xs.map((x,i)=>[i?'':esc(x.a&&x.b?x.a+' — '+x.b:q),esc(x.w)+' · '+pct(x.n,tot),x.n])}))})}
+  <p class="note">Обновлено ${esc(hhmm(d.generated))}. Посетитель — браузер (случайный номер), игрок — вошедший через Telegram (обезличенный номер). Имён, username и IP не храним.</p>`}
+
 // ---------- навигация
 const VIEWS={
   tournaments:{t:'Главная'},overview:{t:'Обзор',tour:1},team:{t:'Состав и рынок',tour:1},market:{t:'Состав и рынок',tour:1},
   lobby:{t:'Лобби-драфт',tour:1},matches:{t:'Матчи и статистика',tour:1},picks:{t:'Прогнозы',tour:1},global:{t:'Рейтинг турнира',tour:1},
-  howto:{t:'Как играть и правила'},profile:{t:'Личный кабинет'},alltime:{t:'Рейтинг сезона'}};
+  howto:{t:'Как играть и правила'},profile:{t:'Личный кабинет'},alltime:{t:'Рейтинг сезона'},stats:{t:'Статистика'}};
 const NAV_GEN=[['tournaments','Главная'],['alltime','Рейтинг сезона'],['howto','Как играть и правила']];
 const NAV_TOUR=[['overview','Обзор турнира'],['team','Состав и рынок'],['matches','Матчи и статистика'],['picks','Прогнозы'],['global','Рейтинг турнира']];
 const ICONS={picks:'<circle cx="12" cy="14" r="6"/><path d="M8 3l2 5M16 3l-2 5"/><path d="M10 14l1.5 1.5L14.5 12"/>',matches:'<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9l4 2-4 2z"/><path d="M8 21h8"/>',overview:'<path d="M3 11l9-7 9 7v9H3z"/>',team:'<rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 18c1-3 9-3 10 0"/>',market:'<path d="M4 7h16l-1.5 11h-13z"/><path d="M8 7a4 4 0 018 0"/>',lobby:'<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c1-4 11-4 12 0M10 20c1-4 11-4 12 0"/>',global:'<path d="M5 20V10M12 20V4M19 20v-7"/>'};
@@ -1498,9 +1539,11 @@ function route(){let v=(location.hash||'').replace(/^#p-/,'').replace(/^#/,''),t
   if((v==='tournaments'||v==='alltime')&&TOUR!==CUR)switchTour(CUR);
   if(VIEWS[v].tour&&(ANN()||PASTV())&&v!=='overview')v=VIEW='overview';
   if(v==='profile'){PF.sub=psub;renderProfile()}
+  if(v==='stats')renderStats();
   document.documentElement.dataset.t=VIEWS[v].tour?TOUR:(v==='profile'&&pfSkin(psub))||'base';
   document.querySelectorAll('.view').forEach(el=>{const on=el.dataset.view===v;el.hidden=!on;if(on){el.classList.remove('v-in');void el.offsetWidth;el.classList.add('v-in')}});
   if(v==='howto')markHowto();
+  if(v!==EV_VIEW){EV_VIEW=v;track('view',{view:v})}
   closeDrawer();renderChrome();if(toRules)$('rules-h').scrollIntoView();else if(goMarket)setTimeout(toMarket,60);else window.scrollTo(0,0)}
 function navTag(id){if(id==='lobby'){const t=lobbyShort();return`<span class="tag ${!draftDone()&&pickOwner(L().picks.length)===0?'hot':''}">${t}</span>`}
   if(id==='team'&&(ROLES.some(k=>S.lineup[k]==null)||S.captain==null))return'<span class="tag hot">!</span>';
@@ -1552,7 +1595,7 @@ const ANN=()=>T().open===false;
 function switchTour(id){if(!TOURS[id])return;MC.stage=null;PKV.stage=null;
   if(TOURS[id].open===false){TOUR=id;render();return}
   TOUR=id;try{localStorage.setItem('df-tour-v2',id)}catch(e){}KEY=keyOf(id);buildPool(id);applyTourData();loadS();loadOwn(id);replay();advanceDraft();save();render()}
-function enterTour(id){switchTour(id);playIntro(id,()=>{if(location.hash==='#p-overview')route();else location.hash='#p-overview'})}
+function enterTour(id){track('tour_open',null,id);switchTour(id);playIntro(id,()=>{if(location.hash==='#p-overview')route();else location.hash='#p-overview'})}
 function daysLeft(){if(!T().start)return'Даты не объявлены.';const d=Math.ceil((new Date(T().start)-Date.now())/864e5);return d>1?`До старта ${d} ${plural(d,'день','дня','дней')}.`:d===1?'Старт завтра.':'Турнир начался.'}
 function plural(n,a,b,c){const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
 function renderOverview(){
@@ -1564,7 +1607,7 @@ function renderOverview(){
   else if(!done){nextT=S.played?`Окно трансферов перед стадией «${STAGES[S.played].name}»`:`Всё готово к старту · ${STAGES[0].date}`;nextP=S.played?`Бесплатных трансферов: ${Math.max(0,FREE_TR-transfers())}. Замените игроков выбывших команд и проверьте капитана.`:`${daysLeft()} До старта состав меняется без ограничений, после — один бесплатный трансфер между стадиями.`;nextGo=S.played?'market':'team';nextL=S.played?'На рынок':'Проверить состав'}
   // идущий турнир: главное действие — зафиксировать состав на текущую стадию (очки идут с серий после фиксации)
   const lv=LIVEV(),cur=RES[S.played];
-  if(lv&&full&&!done){if(!S.locked){nextT=`Зафиксируйте состав на стадию «${STAGES[S.played].name}»`;nextP=cur?'Стадия уже идёт: очки пойдут за серии, которые начнутся после фиксации.':`${daysLeft()} До фиксации состав меняется без ограничений.`;nextGo='team';nextL='К фиксации'}
+  if(lv&&full&&!done){if(!S.locked){nextT=`Зафиксируйте состав на стадию «${STAGES[S.played].name}»`;nextP=cur?'Стадия уже идёт: после фиксации очки начислятся за всю стадию, включая сыгранные серии.':`${daysLeft()} До фиксации состав меняется без ограничений.`;nextGo='team';nextL='К фиксации'}
     else{nextT=`Состав на стадию «${STAGES[S.played].name}» зафиксирован`;nextP='Очки начисляются по мере сыгранных карт — данные OpenDota обновляются каждые несколько минут.';nextGo='matches';nextL='Матчи и очки'}}
   if(full&&!done){const p=pkStats();if(p.filled<p.cur.length&&S.played>0||p.filled===0&&S.played===0){nextP+=` Прогнозы на стадию: заполнено ${p.filled} из ${p.cur.length} — <a href="#p-picks" style="color:var(--ink)">заполнить →</a>`}}
   if(done){nextT=`Турнир завершён · чемпион ${tn(CTX.champ)}`;nextP=`Ваш итог — ${fmt(myTotal())} очков.`;nextGo='global';nextL='Итоговая таблица'}
@@ -1745,6 +1788,7 @@ function pkClick(b){const id=b.dataset.pk,k=S.played,q=pkQuestions(k).find(x=>x.
   if(b.dataset.pkW!=null){const w=+b.dataset.pkW;if(a.w!==w){a.w=w}}
   else if(b.dataset.pkSc){a.sc=b.dataset.pkSc}
   else if(b.dataset.pkT!=null){const t=+b.dataset.pkT;if(q.type==='one')a.w=t;else{a.set=a.set||[];const i=a.set.indexOf(t);if(i>=0)a.set.splice(i,1);else{a.set.push(t);if(a.set.length>2)a.set.shift()}}}
+  track('pk',{stage:q.k,q:q.id,w:a.w!=null?TEAMS[a.w].tag:null,sc:a.sc||null,a:q.a!=null?TEAMS[q.a].tag:null,b:q.b!=null?TEAMS[q.b].tag:null});
   save();renderPicks();renderOverview()}
 // ---------- прогнозы в виде сетки: группы GSL и плей-офф double elimination (вопросы и баллы — прежние: pkQuestions/pkScore)
 const bkTeam=t=>t==null?null:{n:TEAMS[t].name,tag:TEAMS[t].tag,hue:HUE[t]};
@@ -1863,7 +1907,7 @@ function renderPicks(){const el=$('panel-picks');if(!el)return;const st=pkStats(
   el.querySelectorAll('[data-pk-stage]').forEach(b=>b.onclick=()=>{PKV.stage=+b.dataset.pkStage;renderPicks()});
   el.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>pkClick(b));
   const lb=el.querySelector('[data-pk-lock]');if(lb)lb.onclick=()=>{pkConfirm=true;renderPicks()};
-  const ly=el.querySelector('[data-pk-lock-yes]');if(ly)ly.onclick=()=>{S.pkLock=S.pkLock||{};S.pkLock[S.played]=Date.now();pkConfirm=false;save();renderPicks();renderOverview();toast('Прогнозы на стадию зафиксированы')};
+  const ly=el.querySelector('[data-pk-lock-yes]');if(ly)ly.onclick=()=>{S.pkLock=S.pkLock||{};S.pkLock[S.played]=Date.now();track('pk_lock',{stage:S.played,filled:pkStats().filled});pkConfirm=false;save();renderPicks();renderOverview();toast('Прогнозы на стадию зафиксированы')};
   const ln=el.querySelector('[data-pk-lock-no]');if(ln)ln.onclick=()=>{pkConfirm=false;renderPicks()}}
 
 // ---------- сезон и лиги (docs/03). Новый игрок без лиги: первый турнир сезона (CUR) — калибровка в общей таблице турнира,
@@ -2053,7 +2097,7 @@ let rulesDone=false;
 $('lb-role').onchange=renderLobby;$('lb-q').oninput=renderLobby;
 $('lb-seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{lbSeg=b.dataset.v;renderLobby()});
 advanceDraft();save();render();route();
-if(AUTH.mode==='on'){const lo=$('logout');lo.hidden=false;lo.onclick=logout}
+if(AUTH.mode==='on'){const lo=$('logout');lo.hidden=false;lo.onclick=logout;if(AUTH.admin){NAV_GEN.push(['stats','Статистика']);renderChrome()}}
 loadOwn(TOUR);setInterval(()=>{if(!document.hidden)loadOwn(TOUR)},120000);
 // идущий турнир: раз в минуту (и при возврате на вкладку) — свежие живые данные; изменились — пересобираем стадии
 async function pollLive(){const t=T();if(!t||!t.live||document.hidden)return;const j=await loadLive(t);if(!j||(RP()&&j.generated===RP().generated))return;

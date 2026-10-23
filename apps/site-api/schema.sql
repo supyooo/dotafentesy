@@ -13,3 +13,16 @@ create table if not exists picks (
   primary key (uid, tour, acc)
 );
 create index if not exists picks_tour on picks (tour, acc);
+-- журнал событий (с 23.10.2026): посещения, вход, выбор, фиксации, прогнозы — для статистики; без личных данных и IP
+create table if not exists events (
+  id integer primary key autoincrement,
+  at integer not null,           -- мс
+  uid text,                      -- игрок после входа (как в states), иначе null
+  vid text,                      -- случайный номер браузера (до входа тоже), ключ dfv в localStorage
+  type text not null,            -- visit, view, gate, auth, pick, drop, captain, lock, swap, pk, pk_lock …
+  tour text,
+  data text                      -- JSON подробностей
+);
+create index if not exists events_at on events (at);
+create index if not exists events_type_at on events (type, at);
+create index if not exists events_uid on events (uid, at);

@@ -9,7 +9,7 @@ interface D1Stmt { bind(...v: unknown[]): D1Stmt; first<T>(): Promise<T | null>;
 interface D1 { prepare(q: string): D1Stmt; batch(s: D1Stmt[]): Promise<unknown> }
 interface Env { DB?: D1; TELEGRAM_BOT_TOKEN?: string; SESSION_SECRET?: string; TG_CHANNEL?: string; TG_BOT?: string; TG_LINK?: string; TG_TITLE?: string }
 interface Ctx { request: Request; env: Env; waitUntil(p: Promise<unknown>): void }
-interface Sess { u: string; t: number; c: number; s: 0 | 1 }
+interface Sess { u: string; t: number; c: number; s: 0 | 1; a?: 0 | 1 }
 
 const enc = new TextEncoder();
 const RECHECK_MS = 10 * 60_000; // подписку перепроверяем не чаще раза в 10 минут
@@ -36,17 +36,17 @@ const chatLink = (env: Env) => env.TG_LINK || (/^-?\d+$/.test(channelName(env)) 
 // Telegram Login Widget: hash = HMAC-SHA256(строки «ключ=значение» по алфавиту через \n, ключ = SHA256(токен бота))
 async function verifyTelegram(d: Record<string, unknown>, token: string) {
   const hash = String(d.hash ?? "");
-  const check = Object.keys(d).filter((k) => k !== "hash" && d[k] != null).sort().map((k) => `${k}=${d[k]}`).join("\n");
+  const check = Object.keys(d).filter((k) => k !== "hash" && k !== "vid" && d[k] != null).sort().map((k) => `${k}=${d[k]}`).join("\n");
   const sig = hex(await hmac(await crypto.subtle.digest("SHA-256", enc.encode(token)), check));
   return !!hash && same(sig, hash) && Date.now() / 1000 - Number(d.auth_date) < 86_400;
 }
 // подписка: бот должен быть администратором канала, иначе Telegram не отдаёт участников
-async function isMember(env: Env, tgId: number) {
+async function memberStatus(env: Env, tgId: number): Promise<{ member: boolean; admin: boolean }> {
   const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(chatId(env))}&user_id=${tgId}`);
   const j = (await r.json()) as { ok: boolean; result?: { status: string; is_member?: boolean }; description?: string };
   if (!j.ok) throw new Error(j.description ?? "getChatMember");
-  const s = j.result!.status;
-  return s === "creator" || s === "administrator" || s === "member" || (s === "restricted" && !!j.result!.is_member);
+  const s = j.result!.status, admin = s === "creator" || s === "administrator";
+  return { member: admin || s === "member" || (s === "restricted" && !!j.result!.is_member), admin };
 }
 
 const uidOf = async (env: Env, tgId: number) => hex(await hmac(enc.encode(env.SESSION_SECRET!), "tg:" + tgId)).slice(0, 32);
@@ -66,7 +66,8 @@ async function session(req: Request, env: Env): Promise<{ s: Sess | null; set?: 
   if (!s) return { s: null };
   if (s.s && Date.now() - s.c < RECHECK_MS) return { s };
   try {
-    const ns: Sess = { ...s, s: (await isMember(env, s.t)) ? 1 : 0, c: Date.now() };
+    const m = await memberStatus(env, s.t), ns: Sess = { ...s, s: m.member ? 1 : 0, a: m.admin ? 1 : 0, c: Date.now() };
+    if (ns.s !== s.s && env.DB) await logEvents(env, s.u, null, [{ type: "sub_change", data: { subscribed: !!ns.s } }]);
     return { s: ns, set: cookie(await signSess(env, ns), SESSION_DAYS * 86_400) };
   } catch (e) { return { s, error: (e as Error).message }; }
 }
@@ -91,16 +92,27 @@ export async function onRequest(ctx: Ctx): Promise<Response> {
     const d = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!d || !(await verifyTelegram(d, env.TELEGRAM_BOT_TOKEN!))) return json({ error: "подпись Telegram не сошлась" }, 401);
     const tg = Number(d.id);
-    let member: boolean;
-    try { member = await isMember(env, tg); } catch (e) { return json({ error: "не удалось проверить подписку: " + (e as Error).message }, 502); }
-    const s: Sess = { u: await uidOf(env, tg), t: tg, c: Date.now(), s: member ? 1 : 0 };
+    let m: { member: boolean; admin: boolean };
+    try { m = await memberStatus(env, tg); } catch (e) { return json({ error: "не удалось проверить подписку: " + (e as Error).message }, 502); }
+    const member = m.member, s: Sess = { u: await uidOf(env, tg), t: tg, c: Date.now(), s: member ? 1 : 0, a: m.admin ? 1 : 0 };
+    // вход связывает посетителя (vid до входа) с игроком (uid) — для воронки «зашёл → вошёл → подписан»
+    await logEvents(env, s.u, typeof d.vid === "string" ? d.vid : null, [{ type: "auth", data: { subscribed: member } }]);
     return json({ auth: true, subscribed: member, channel: channelName(env) }, 200, { "set-cookie": cookie(await signSess(env, s), SESSION_DAYS * 86_400) });
   }
   if (route === "logout" && req.method === "POST") return json({ ok: true }, 200, { "set-cookie": cookie("", 0) });
 
+  if (route === "events" && req.method === "POST") {
+    const text = await req.text();
+    if (text.length > 60_000) return json({ error: "много событий" }, 413);
+    const body = JSON.parse(text) as { vid?: string; events?: Array<{ type: string; tour?: string; data?: unknown }> };
+    const sess = await readSess(req, env);
+    const evs = (body.events ?? []).slice(0, 60).filter((e) => EVENT_TYPES.has(e.type) && (sess || PUBLIC_EVENTS.has(e.type)));
+    if (evs.length) await logEvents(env, sess?.u ?? null, typeof body.vid === "string" ? body.vid.slice(0, 40) : null, evs);
+    return json({ ok: true, n: evs.length });
+  }
   const { s, set, error } = await session(req, env);
   const extra: Record<string, string> = set ? { "set-cookie": set } : {};
-  if (route === "me") return json({ auth: !!s, subscribed: !!s?.s, channel: channelName(env), ...(error ? { warning: error } : {}) }, 200, extra);
+  if (route === "me") return json({ auth: !!s, subscribed: !!s?.s, admin: !!s?.a, channel: channelName(env), ...(error ? { warning: error } : {}) }, 200, extra);
   if (!s) return json({ error: "нужен вход" }, 401);
   if (!s.s) return json({ error: "нужна подписка на канал", channel: channelName(env) }, 403, extra);
   const db = env.DB!;
@@ -131,5 +143,63 @@ export async function onRequest(ctx: Ctx): Promise<Response> {
     const rows = (await db.prepare("select acc, count(*) c from picks where tour = ? group by acc").bind(tour).all<{ acc: number; c: number }>()).results;
     return json({ tour, n, own: Object.fromEntries(rows.map((r) => [r.acc, n ? r.c / n : 0])) }, 200, extra);
   }
+  if (route === "stats" && req.method === "GET") {
+    if (!s.a) return json({ error: "только для администраторов группы" }, 403, extra);
+    return json(await stats(db, Math.min(90, Math.max(1, Number(url.searchParams.get("days") ?? 14)))), 200, extra);
+  }
   return json({ error: "нет такого метода" }, 404);
+}
+
+// ---------- журнал событий (обезличенно: uid — игрок после входа, vid — случайный номер браузера; ни имён, ни IP)
+const EVENT_TYPES = new Set(["visit", "view", "gate", "gate_check", "tour_open", "pick", "drop", "captain", "tc", "lock", "swap",
+  "pk", "pk_lock", "reset", "logout", "auth", "sub_change"]);
+const PUBLIC_EVENTS = new Set(["visit", "view", "gate", "gate_check"]);
+async function logEvents(env: Env, uid: string | null, vid: string | null, evs: Array<{ type: string; tour?: string; data?: unknown }>) {
+  const now = Date.now(), q = "insert into events (at, uid, vid, type, tour, data) values (?, ?, ?, ?, ?, ?)";
+  await env.DB!.batch(evs.map((e) => env.DB!.prepare(q).bind(now, uid, vid, e.type, typeof e.tour === "string" ? e.tour.slice(0, 40) : null,
+    e.data == null ? null : JSON.stringify(e.data).slice(0, 2000))));
+}
+
+// ---------- сводка для администраторов группы (страница «Статистика» на сайте): только агрегаты
+async function stats(db: D1, days: number) {
+  const since = Date.now() - days * 86_400_000;
+  const all = <T>(q: string, ...b: unknown[]) => db.prepare(q).bind(...b).all<T>().then((r) => r.results);
+  const one = <T>(q: string, ...b: unknown[]) => db.prepare(q).bind(...b).first<T>();
+  const day = "strftime('%Y-%m-%d', at / 1000, 'unixepoch', '+3 hours')"; // дни по Москве
+  return {
+    days, generated: new Date().toISOString(),
+    totals: await one<Record<string, number>>(`select
+      (select count(*) from states) players,
+      (select count(distinct vid) from events where type = 'visit') visitors,
+      (select count(distinct uid) from events where type = 'lock') locked,
+      (select count(distinct uid) from events where type = 'pk') predictors,
+      (select count(*) from events) events`),
+    daily: await all(`select ${day} d, count(distinct case when type = 'visit' then vid end) visitors,
+      count(distinct uid) players, count(distinct case when type = 'lock' then uid end) locks,
+      count(case when type = 'pk' then 1 end) predictions, count(*) events
+      from events where at >= ? group by d order by d`, since),
+    funnel: await one<Record<string, number>>(`select
+      count(distinct case when type = 'visit' then vid end) visited,
+      count(distinct case when type = 'gate' then vid end) saw_login,
+      count(distinct case when type = 'auth' then vid end) logged_in,
+      count(distinct case when type = 'auth' and json_extract(data, '$.subscribed') then vid end) subscribed
+      from events where at >= ?`, since),
+    builders: await one<Record<string, number>>(`select count(distinct uid) with_lineup from picks`),
+    retention: await one<Record<string, number>>(`select count(*) players, sum(case when n >= 2 then 1 else 0 end) two_plus_days,
+      sum(case when n >= 3 then 1 else 0 end) three_plus_days from (select uid, count(distinct ${day}) n from events where uid is not null group by uid)`),
+    sources: await all(`select coalesce(json_extract(data, '$.ref'), '(прямой заход)') ref, count(distinct vid) visitors
+      from events where type = 'visit' and at >= ? group by ref order by visitors desc limit 15`, since),
+    devices: await all(`select case when json_extract(data, '$.mobile') then 'телефон' else 'компьютер' end device, count(distinct vid) visitors
+      from events where type = 'visit' and at >= ? group by device`, since),
+    views: await all(`select json_extract(data, '$.view') view, count(*) n from events where type = 'view' and at >= ? group by view order by n desc`, since),
+    picks: await all(`select tour, acc, count(*) n from picks group by tour, acc order by tour, n desc`),
+    captains: await all(`select tour, json_extract(data, '$.captain') acc, count(distinct uid) n from events where type = 'lock' group by tour, acc order by tour, n desc`),
+    // прогнозы: последний выбор игрока по каждой серии — кого аудитория считает фаворитом
+    predictions: await all(`select tour, q, max(a) a, max(b) b, w, count(*) n from (
+        select tour, json_extract(data, '$.q') q, json_extract(data, '$.a') a, json_extract(data, '$.b') b, json_extract(data, '$.w') w,
+          row_number() over (partition by uid, tour, json_extract(data, '$.q') order by at desc) rn
+        from events where type = 'pk' and json_extract(data, '$.w') is not null)
+      where rn = 1 group by tour, q, w order by tour, q, n desc`),
+    events_by_type: await all(`select type, count(*) n, count(distinct coalesce(uid, vid)) who from events where at >= ? group by type order by n desc`, since),
+  };
 }
