@@ -131,7 +131,8 @@
     "id": "ast",
     "name": "Astra Invicta",
     "tag": "AST",
-    "hue": 268
+    "hue": 268,
+    "steam_team_id": 10292107
   },
   {
     "id": "legion",
