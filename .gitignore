@@ -19,3 +19,4 @@ __pycache__/
 .cache/
 .claude/settings.local.json
 image-14-104.jpg
+.dev.vars

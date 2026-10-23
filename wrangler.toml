@@ -1,0 +1,17 @@
+# Cloudflare Pages «dota-fantasy»: статика — prototype/, API — functions/ (вход через Telegram, подписка, прогресс).
+# Деплой как раньше: npx wrangler pages deploy prototype --project-name dota-fantasy --branch main (D:\dev\deploy-site.ps1).
+# Секреты (не в репозитории): npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name dota-fantasy
+#                             и SESSION_SECRET (случайная строка) — docs/10 «Вход и сохранение».
+name = "dota-fantasy"
+pages_build_output_dir = "prototype"
+compatibility_date = "2026-10-01"
+
+[vars]
+# канал, подписка на который открывает игру (username без @), и username бота для виджета входа (у бота — /setdomain на сайт)
+TG_CHANNEL = ""
+TG_BOT = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dota-fantasy"
+database_id = "ac2cb7a4-5ebe-4479-95b6-63a3213fb967"
