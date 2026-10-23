@@ -3,35 +3,35 @@
     "id": "yatoro",
     "nick": "Yatoro",
     "account_id": 321580662,
-    "photo": "photos/yatoro2.webp",
+    "photo": "photos/yatoro3.webp",
     "rating_bonus_tmp": 3
   },
   {
     "id": "larl",
     "nick": "Larl",
     "account_id": 106305042,
-    "photo": "photos/larl2.webp",
+    "photo": "photos/larl3.webp",
     "rating_bonus_tmp": 1
   },
   {
     "id": "batyuk",
     "nick": "Batyuk",
     "account_id": 140835095,
-    "photo": "photos/batyuk.webp",
+    "photo": "photos/batyuk2.webp",
     "rating_bonus_tmp": -1
   },
   {
     "id": "notme",
     "nick": "not me",
     "account_id": 218231587,
-    "photo": "photos/notme.webp",
+    "photo": "photos/notme2.webp",
     "rating_bonus_tmp": 0
   },
   {
     "id": "rue",
     "nick": "rue",
     "account_id": 847565596,
-    "photo": "photos/rue2.webp",
+    "photo": "photos/rue3.webp",
     "rating_bonus_tmp": 0
   },
   {
@@ -129,7 +129,7 @@
     "id": "swedenstrong",
     "nick": "swedenstrong",
     "account_id": 175311897,
-    "photo": "photos/swedenstrong.webp",
+    "photo": "photos/swedenstrong2.webp",
     "rating_bonus_tmp": 0
   },
   {
@@ -233,6 +233,13 @@
     "nick": "MidOne",
     "account_id": 116585378,
     "photo": "photos/midone.webp",
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "malr1ne",
+    "nick": "Malr1ne",
+    "account_id": 898455820,
+    "photo": "photos/malr1ne.webp",
     "rating_bonus_tmp": 0
   },
   {
@@ -584,7 +591,7 @@
     "id": "yuma",
     "nick": "Yuma",
     "account_id": 177203952,
-    "photo": null,
+    "photo": "photos/yuma.webp",
     "rating_bonus_tmp": 0
   },
   {

@@ -19,10 +19,10 @@
     "1W": [{ "pos": 1, "nick": "Pure", "acc": 331855530 }, { "pos": 2, "nick": "bzm", "acc": 93618577 }, { "pos": 3, "nick": "33", "acc": 86698277 }, { "pos": 4, "nick": "Ari", "acc": 346412363 }, { "pos": 5, "nick": "Whitemon", "acc": 136829091 }],
     "GL": [{ "pos": 1, "nick": "Yuma", "acc": 177203952 }, { "pos": 2, "nick": "RCY", "acc": 154974246 }, { "pos": 3, "nick": "Fayde", "acc": 160119017 }, { "pos": 4, "nick": "Bignum", "acc": 90423751 }, { "pos": 5, "nick": "Speeed", "acc": 191362875 }],
     "OG": [{ "pos": 1, "nick": "Natsumi", "acc": 355168766 }, { "pos": 2, "nick": "Topson", "acc": 94054712 }, { "pos": 3, "nick": "SSS", "acc": 402583877 }, { "pos": 4, "nick": "OneJey", "acc": 181267255 }, { "pos": 5, "nick": "skem", "acc": 100594231 }],
-    "TL": [{ "pos": 1, "nick": "miCKe", "acc": 152962063 }, { "pos": 3, "nick": "Wisper", "acc": 292921272 }, { "pos": 4, "nick": "Boxi", "acc": 77490514 }, { "pos": 5, "nick": "tOfu", "acc": 16497807 }],
+    "TL": [{ "pos": 1, "nick": "miCKe", "acc": 152962063 }, { "pos": 2, "nick": "Malr1ne", "acc": 898455820 }, { "pos": 3, "nick": "Wisper", "acc": 292921272 }, { "pos": 4, "nick": "Boxi", "acc": 77490514 }, { "pos": 5, "nick": "tOfu", "acc": 16497807 }],
     "LEGION": [{ "pos": 1, "nick": "Darklord^", "acc": 879017980 }, { "pos": 2, "nick": "Stojkov", "acc": 262476000 }, { "pos": 3, "nick": "SaberLight", "acc": 126212866 }, { "pos": 4, "nick": "xsvampire", "acc": 326327879 }, { "pos": 5, "nick": "Kidaro", "acc": 104334048 }]
   },
-  "rosters_note": "Astra Invicta — состав не объявлен; Team Liquid — мид не объявлен (Nisha взял паузу 28.09, MidOne играл на Slam VIII заменой)",
+  "rosters_note": "Astra Invicta — состав не объявлен; Team Liquid — мид Malr1ne (по матчам PARI Universe с 22.10; против GamerLegion керри — rincyq заменой)",
   "stages": [
     { "idx": 0, "name": "Группы", "format": "round_robin", "from": "2026-10-22", "to": "2026-10-27",
       "note": "две группы по 5, круг в один оборот, все серии Bo3; в таблице — очко за каждую выигранную карту; 1–4 места — в плей-офф, 5-е выбывает; тай-брейки за выход и посев — 27 октября (две команды — Bo3, три и больше — Bo1 по кругу). Жеребьёвка групп не объявлена — узлы без команд и групп, по 4 матча в день" },

@@ -296,11 +296,11 @@
         "status": "inv",
         "players": {
           "carry": "micke",
+          "mid": "malr1ne",
           "off": "wisper",
           "soft": "boxi",
           "hard": "tofu"
-        },
-        "note": "Мид не объявлен: Nisha взял паузу 28.09, MidOne играл на Slam VIII заменой"
+        }
       },
       {
         "team": "og",
