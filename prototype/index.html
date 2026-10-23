@@ -634,6 +634,7 @@ button.bk-t{cursor:pointer}button.bk-t:hover{background:color-mix(in srgb,var(--
 .bk-board.bk-de8{grid-template-columns:repeat(4,minmax(186px,1fr))}
 
 
+.pk-dl .pk-lk{margin-left:auto;display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 /* ---------- своя графика вместо фото и логотипов */
 /* монограмма игрока: буквы ника на плашке цвета команды */
 .mono{display:grid;place-items:center;font-family:var(--display);font-weight:var(--dw);line-height:1;letter-spacing:-.02em;color:#fff;
@@ -772,6 +773,13 @@ const [D_TEAMS,D_PLAYERS,D_ROSTERS,D_TOURS]=await Promise.all(['teams','players'
 const REPLAYS={};
 await Promise.all(D_TOURS.tournaments.filter(t=>t.replay).map(t=>fetch('data/'+t.replay,{cache:'no-cache'})
   .then(r=>r.ok?r.json():null).then(j=>{if(j)REPLAYS[t.id]=j}).catch(()=>{})));
+// идущий турнир (поле live): живые данные OpenDota в формате выгрузки replay — `pnpm --filter @df/worker live-feed <slug>`.
+// Свежая копия — в ветке live-feed на GitHub (её обновляет GitHub Actions, workflow live-feed), запасная — data/<live>;
+// берём ту, что новее (generated). Без кнопки «Сыграть стадию»: сыгранное — как есть, идущая стадия — частично
+async function loadLive(t){const urls=[...(t.live_remote?[t.live_remote+'?t='+Date.now()]:[]),'data/'+t.live];
+  const got=await Promise.all(urls.map(u=>fetch(u,{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null)));
+  return got.filter(j=>j&&j.stages).sort((a,b)=>String(b.generated).localeCompare(String(a.generated)))[0]||null}
+await Promise.all(D_TOURS.tournaments.filter(t=>t.live).map(t=>loadLive(t).then(j=>{if(j)REPLAYS[t.id]=j})));
 // будущий турнир: заявка, стартовые рейтинги и цены из базы (поле pool → data/pool/<slug>.json, `cli export-pool <slug>`);
 // дальше турнир играется симуляцией от этих значений
 const POOLS={};
@@ -906,7 +914,11 @@ function runSlam(k,series,ctx){let alive;
 // Расписание групп: в день по туру каждой группы (2 матча в группе), всего 5 дней — как у организатора (4 матча в день).
 function rrRounds(ts){const a=ts.slice();if(a.length%2)a.push(null);const n=a.length,R=[];
   for(let r=0;r<n-1;r++){const m=[];for(let i=0;i<n/2;i++){const x=a[i],y=a[n-1-i];if(x!=null&&y!=null)m.push([x,y])}R.push(m);a.splice(1,0,a.pop())}return R}
-function rrSchedule(){const gs=Object.keys(GROUPS),R=Object.fromEntries(gs.map(g=>[g,rrRounds(GROUPS[g])])),out=[];
+function rrSchedule(){
+  // идущий турнир: настоящее расписание групп из выгрузки (узлы G1…G20 регламента), тур — по дню матча
+  if(LIVEV()){const ser=RP().stages[0].series,days=[...new Set(ser.map(x=>(x.at||'').slice(0,10)))];
+    return ser.map(x=>{const d=days.indexOf((x.at||'').slice(0,10));return{a:tixOf(x.a),b:tixOf(x.b),g:x.group,d,round:'Группа '+x.group+' · тур '+(d+1),key:x.key,at:x.at}})}
+  const gs=Object.keys(GROUPS),R=Object.fromEntries(gs.map(g=>[g,rrRounds(GROUPS[g])])),out=[];
   for(let d=0;d<R[gs[0]].length;d++)gs.forEach(g=>R[g][d].forEach(([a,b])=>out.push({a,b,g,d,round:'Группа '+g+' · тур '+(d+1)})));return out}
 // таблица группы: очки = выигранные карты; при равенстве — личная встреча, разница карт, сила команды (в симуляции)
 function rrTable(g,res){const rows=GROUPS[g].map(t=>({t,pts:0,ml:0,sw:0,sl:0,h2h:{}}));const R=Object.fromEntries(rows.map(x=>[x.t,x]));
@@ -942,7 +954,7 @@ function runPari(k,series,ctx){
 
 // ---------- state
 // у турнира на реальных данных — свой прогресс, привязанный к файлу выгрузки (старые сохранения симуляции не мешают)
-const keyOf=t=>'df-fantasy-v8-'+t+(TOURS[t]&&TOURS[t].replay?'-'+TOURS[t].replay.replace(/\W+/g,'_'):'');
+const keyOf=t=>'df-fantasy-v8-'+t+(TOURS[t]&&TOURS[t].replay?'-'+TOURS[t].replay.replace(/\W+/g,'_'):'')+(TOURS[t]&&TOURS[t].live?'-live':'');
 let KEY=keyOf(TOUR);
 const MANAGERS=['Вы','Дима','Саня_мид','pos5enjoyer','Кирилл','Мила','Лёха','Артём','Настя','Гоша','rampage_only','Тимур','Вова','Ира','kek_carry','Паша'];
 function autoPick(r,alive){for(let tries=0;tries<500;tries++){const lu={},cnt={};let left=BUDGET,ok=true;
@@ -961,7 +973,55 @@ function fresh(seed){seed=seed||newSeed();const lu=Object.fromEntries(ROLES.map(
 let S;function loadS(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}if(!S||!S.lineup||!S.lobby)S=fresh();if(!S.pk)S.pk={};if(!S.ws)S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash};UNDO=[]}let UNDO=[];applyTourData();loadS();
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 let RES=[],CTX={};
-function replay(){RES=[];CTX={};for(let k=0;k<S.played;k++)RES.push(runStage(k,S.seed,CTX));computeDeltas()}
+function replay(){RES=[];CTX={};
+  // идущий турнир: стадии — из живых данных; RES[k] есть у начавшихся стадий, у идущей — частичный (live: true)
+  if(LIVEV()){RP().stages.forEach((st,k)=>{if(k<NS()&&st.status!=='upcoming'&&RES.length===k)RES.push(liveStage(k))});
+    let done=0;while(done<RES.length&&!RES[done].live)done++;liveSync(done);CTX=liveCtx();computeDeltas();return}
+  for(let k=0;k<S.played;k++)RES.push(runStage(k,S.seed,CTX));computeDeltas()}
+// ---------- идущий турнир на живых данных (поле live в tournaments.json)
+const LIVEV=()=>!!(T()&&T().live&&RP());
+const tixOf=tag=>tag?TEAMS.findIndex(t=>t.tag===tag):-1;
+// стадия k из выгрузки: серии в порядке узлов регламента — тот же порядок, что у лога симуляции (на него опираются прогнозы
+// и сетки). Несыгранная серия в логе — null, идущая — live: true (счёт есть, итога нет). ser — очки по сериям со временем
+// старта: в моём составе считаются только серии, начавшиеся после фиксации (myPts)
+function liveStage(k){const st=RP().stages[k],agg={},log=[],ser=[],byAcc=new Map(P.filter(p=>p.acc!=null).map(p=>[String(p.acc),p]));
+  const add=(p,s)=>{const a=agg[p.id]||(agg[p.id]={k:0,d:0,a:0,lh:0,gpm:0,stun:0,obs:0,stack:0,tow:0,rosh:0,fb:0,win:0,maps:0,raw:0});for(const key in s)if(key!=='pt')a[key]+=s[key]};
+  st.series.forEach(x=>{const a=tixOf(x.a),b=tixOf(x.b);if(x.status==='scheduled'||a<0||b<0){log.push(null);return}
+    const maps=x.maps.map(m=>{const side=t=>m.players.map(([acc,s])=>[byAcc.get(String(acc)),s]).filter(([p])=>p&&p.team===t)
+        .sort((u,v)=>ROLES.indexOf(u[0].role)-ROLES.indexOf(v[0].role)).map(([p,s])=>{const s2={...s,tow:0,rosh:0,fb:0,maps:1};add(p,s2);return[p.id,s2]});
+      const A=side(a),B=side(b);return{aw:m.winner===x.a,ms:A.concat(B),na:A.length,tier:m.tier}});
+    const pts={};for(const acc in x.pts){const p=byAcc.get(acc);if(p)pts[p.id]=x.pts[acc]}
+    ser.push({start:Date.parse(x.start),pts});
+    log.push({round:x.group?'Группа '+x.group:x.label,label:x.label,key:x.key,g:x.group,a,b,wa:x.wa,wb:x.wb,maps,live:x.status!=='finished',start:x.start})});
+  const pts={};P.forEach(p=>{const y=rpOf(p);if(y&&y.stages[k]&&y.stages[k].maps)pts[p.id]=y.stages[k].pts});
+  return{agg,pts,log,ser,aliveAfter:new Set(liveAlive(k)),live:st.status!=='finished'}}
+// кто остаётся в турнире после стадии: группы — 1–4 места по таблице (до конца групп — все); сетка — без проигравших
+// серий нижней сетки и гранд-финала
+function liveAlive(k){const R=RP(),st=R.stages[k];
+  if(k===0)return st.status!=='finished'?[...ALL]:Object.values(R.standings||{}).flatMap(rows=>rows.slice(0,4).map(r=>tixOf(r.tag)));
+  const out=new Set();st.series.forEach(x=>{if(x.status==='finished'&&/^(LB|GF)/.test(x.key))out.add(tixOf(x.wa>x.wb?x.b:x.a))});
+  return liveAlive(k-1).filter(t=>!out.has(t))}
+// контекст сетки для прогнозов и обзора: таблицы групп по сыгранным сериям, пары 1/4 и финалов — из выгрузки, когда известны
+function liveCtx(){const R=RP(),C={},node=key=>R.stages.flatMap(s=>s.series).find(x=>x.key===key);
+  const pair=key=>{const x=node(key);return x&&x.a&&x.b?[tixOf(x.a),tixOf(x.b)]:null},winOf=x=>tixOf(x.wa>x.wb?x.a:x.b),loseOf=x=>tixOf(x.wa>x.wb?x.b:x.a);
+  if(RES[0]){C.tab={};Object.keys(GROUPS).forEach(g=>C.tab[g]=rrTable(g,RES[0].log.filter(x=>x&&!x.live)))}
+  const q=['UBQF1','UBQF2','UBQF3','UBQF4'].map(pair);
+  if(q.every(Boolean))C.qf=q;else if(R.stages[0].status==='finished'&&C.tab)C.qf=pariSeeding(C.tab);
+  const ubf=pair('UBF');if(ubf)C.ubf=ubf;
+  const lbsf=node('LBSF');if(lbsf&&lbsf.status==='finished')C.lbs=winOf(lbsf);
+  const gf=node('GF');if(gf&&gf.status==='finished'){C.champ=winOf(gf);C.runner=loseOf(gf)}
+  const lbf=node('LBF');if(lbf&&lbf.status==='finished')C.third=loseOf(lbf);
+  return C}
+// прогресс игрока в живом режиме: сыграно — завершённые стадии. Снимок состава на стадию делается при фиксации
+// (S.lockAt[k] — время фиксации); не зафиксировал до конца стадии — пустой состав, 0 очков
+function liveSync(done){S.lockAt=S.lockAt||{};S.pkLock=S.pkLock||{};
+  for(let k=0;k<done;k++)if(!S.snaps[k])S.snaps[k]={lineup:Object.fromEntries(ROLES.map(r=>[r,null])),captain:null,tc:false,penalty:0,transfers:0,missed:true};
+  if(S.played!==done){S.played=done;S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash}}
+  S.locked=!!S.snaps[done]}
+// очки игрока в моём составе за стадию: в живом режиме — только серии, начавшиеся после фиксации состава на эту стадию
+function myPts(k,id){const R=RES[k];if(!R)return 0;const t=(S.lockAt||{})[k];if(!R.ser||t==null)return R.pts[id]||0;
+  return r1(R.ser.reduce((s,x)=>s+(x.start>=t?(x.pts[id]||0):0),0))}
+const hhmm=iso=>{try{return new Date(iso).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
 // Динамика после каждой стадии: рейтинг ±3 по очкам за карту (среднее по позиции = 10),
 // цена +0.5 за ≥12 оч./карту, −0.5 за ≤8, ещё −0.5 если команда вылетела на этой стадии.
 let DR=[],DP=[];
@@ -985,7 +1045,7 @@ const transfers=()=>{const b=windowBase();return b?ROLES.filter(k=>S.lineup[k]!=
 const penalty=()=>Math.max(0,transfers()-FREE_TR)*TR_COST;
 const spent=()=>ROLES.reduce((s,k)=>s+(S.lineup[k]!=null?curP(P[S.lineup[k]]):0),0); // стоимость состава по текущим ценам
 const totalPts=id=>RES.reduce((s,R)=>s+(R.pts[id]||0),0);
-function stageScore(k){const sn=S.snaps[k],R=RES[k];let s=0;ROLES.forEach(role=>{const id=sn.lineup[role];if(id==null)return;s+=(R.pts[id]||0)*(id===sn.captain?(sn.tc?3:2):1)});return r1(s-sn.penalty)}
+function stageScore(k){const sn=S.snaps[k],R=RES[k];if(!sn||!R)return 0;let s=0;ROLES.forEach(role=>{const id=sn.lineup[role];if(id==null)return;s+=myPts(k,id)*(id===sn.captain?(sn.tc?3:2):1)});return r1(s-sn.penalty)}
 const myTotal=()=>r1(S.snaps.reduce((s,_,k)=>s+stageScore(k),0));
 
 // ---------- lobby (draft league)
@@ -1082,7 +1142,7 @@ const who=(p,extra,short)=>`<div class="who">${ava(p)}<div><div class="pn">${p.n
 
 // настоящие даты стадий — у турниров, где они объявлены (stage_dates в tournaments.json); у демо — «стадия N»
 function renderTimeline(){const own=TOUR==='blast'||!!T().stage_dates;$('timeline').style.setProperty('--ns',STAGES.length);$('timeline').innerHTML=STAGES.map((s0,i)=>{const s=own?s0:{...s0,date:'стадия '+(i+1)};const cls=i<S.played?'done':i===S.played?'next':'';
-  const st=i<S.played?'Сыграно':i===S.played?'Следующая':'Впереди';
+  const st=i<S.played?'Сыграно':i===S.played?(RES[i]&&RES[i].live?'Идёт':'Следующая'):'Впереди';
   return`<div class="step ${cls}"><span class="s1">${st} · ${s.date}</span><span class="s2">${s.name}</span><span class="s3">${s.meta}</span></div>`}).join('')}
 function renderBar(){const sp=spent(),tr=transfers(),pen=penalty(),done=S.played>=NS();
   const trTxt=S.played===0?'Свободно до старта':tr+' из '+FREE_TR+(pen?' · −'+pen:'');
@@ -1097,6 +1157,12 @@ function renderBar(){const sp=spent(),tr=transfers(),pen=penalty(),done=S.played
 // демо-панель: симуляция не часть продукта, поэтому вынесена отдельно
 // тестовая панель: временно, пока стадии не идут по реальному расписанию
 function renderDemo(){const done=S.played>=NS();
+  // идущий турнир: вместо «Сыграть стадию» — откуда данные и что уже сыграно
+  if(LIVEV()){const R=RP(),all=R.stages.flatMap(s=>s.series),fin=all.filter(x=>x.status==='finished').length,live=all.filter(x=>x.status==='live').length,cur=R.stages.find(s=>s.status!=='finished');
+    $('demo').innerHTML=`<div class="dl-row"><span class="dl">LIVE</span><span class="muted" style="font-size:12px">реальные данные OpenDota · обновлено ${hhmm(R.generated)}</span></div>
+    <div class="muted msg" style="font-size:12px">${cur?esc(cur.name)+' · ':'Турнир завершён · '}серий сыграно ${fin} из ${all.length}${live?' · идёт '+live:''}${(R.pending_parse||[]).length?' · ждут разбора реплея: '+R.pending_parse.length:''}</div>
+    <button class="btn" data-act="reset">${confirmReset?'Точно? Состав и прогнозы сбросятся':'Сбросить мой прогресс'}</button>`;
+    $('demo').querySelector('[data-act=reset]').onclick=reset;return}
   $('demo').innerHTML=`<div class="dl-row"><span class="dl">ТЕСТ</span><span class="muted" style="font-size:12px">симуляция турнира</span></div>
   <button class="btn primary" data-act="play" ${done?'disabled':''}>${done?'Турнир завершён':'Сыграть: '+STAGES[S.played].name}</button>
   <button class="btn" data-act="reset">${confirmReset?'Точно? Прогресс сбросится':'Новый турнир'}</button>
@@ -1108,7 +1174,7 @@ function lobbyShort(){if(!draftDone())return`драфт ${L().picks.length}/80`;
   return lbAlive(0)?'в игре':'выбыли'}
 function renderLineup(){const alive=aliveNow(),last=S.played?RES[S.played-1]:null;
   $('lineup').innerHTML=ROLES.map(role=>{const id=S.lineup[role];if(id==null)return emptyCard(role,`<button class="btn primary" type="button" data-find="${role}">Выбрать на рынке</button>`);
-    const p=P[id],cap=S.captain===id,lp=last&&S.snaps[S.played-1].lineup[role]===id?(last.pts[id]||0):null;
+    const p=P[id],cap=S.captain===id,lp=last&&S.snaps[S.played-1].lineup[role]===id?myPts(S.played-1,id):null;
     return card(p,{cap,capLabel:S.tcArmed?'C×3':'C×2',out:!alive.has(p.team),
       stats:`<span>${fmt(curP(p))} ${dlt(lastDP(p),1)}</span><span>${fmt(totalPts(id))} оч.${lp!=null?' <span class="muted">+'+fmt(lp)+'</span>':''}</span>`,
       acts:`<button data-cap="${id}" aria-pressed="${cap}" title="${S.locked?'Состав зафиксирован':'Капитан'}" ${S.locked?'disabled':''}>C</button><button data-find="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Заменить</button><button data-drop="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Убрать</button>`})}).join('');
@@ -1122,12 +1188,22 @@ function lockBlocker(){const miss=ROLES.filter(k=>S.lineup[k]==null);
   if(miss.length)return'Сначала соберите пятёрку: не хватает — '+miss.map(k=>RN[k]).join(', ')+'.';
   if(S.captain==null)return'Сначала назначьте капитана — кнопка «C» на карточке.';
   if(S.cash<-1e-9)return'В банке минус — замените кого-то дешевле.';return''}
-function lockLineup(){if(S.locked||S.played>=NS()||lockBlocker())return;S.locked=true;confirmLock=false;UNDO=[];save();render();toast('Состав зафиксирован до стадии «'+STAGES[S.played].name+'»')}
+function lockLineup(){if(S.locked||S.played>=NS()||lockBlocker())return;
+  // идущий турнир: фиксация = снимок состава на текущую стадию; очки идут за серии, начавшиеся после неё
+  // (тестовый прогон: можно зафиксировать и после старта стадии — сыгранное до фиксации не засчитывается)
+  if(LIVEV()){const k=S.played;S.snaps[k]={lineup:{...S.lineup},captain:S.captain,tc:S.tcArmed,penalty:penalty(),transfers:transfers()};
+    S.lockAt=S.lockAt||{};S.lockAt[k]=Date.now();if(S.tcArmed){S.tcUsed=k;S.tcArmed=false}WORLD=null}
+  S.locked=true;confirmLock=false;UNDO=[];save();render();
+  toast(LIVEV()?'Состав зафиксирован: очки пойдут с серий, которые начнутся после этого':'Состав зафиксирован до стадии «'+STAGES[S.played].name+'»')}
 function renderLock(){const el=$('lock-bar');if(!el)return;if(S.played>=NS()){el.hidden=true;el.innerHTML='';return}
   const st=STAGES[S.played].name;el.hidden=false;
-  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован</span><b>${LOCK_IC}До стадии «${esc(st)}» изменить нельзя</b><span class="muted" style="font-size:14px">Замены, капитан и «Тройной капитан» откроются после этой стадии.</span></div></div>`;return}
+  const lv=LIVEV(),at=lv&&(S.lockAt||{})[S.played];
+  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован${at?' · '+hhmm(at):''}</span><b>${LOCK_IC}${lv?'На стадию «'+esc(st)+'» — до её конца не изменить':'До стадии «'+esc(st)+'» изменить нельзя'}</b><span class="muted" style="font-size:14px">${lv?'Очки идут за серии, начавшиеся после фиксации. Замены откроются, когда стадия закончится.':'Замены, капитан и «Тройной капитан» откроются после этой стадии.'}</span></div></div>`;return}
   const why=lockBlocker();
-  el.innerHTML=`<div class="ub"><div class="ub-t"><span class="pf-lab">${confirmLock?'Точно фиксируем?':'Состав готов?'}</span><b>${confirmLock?'До стадии «'+esc(st)+'» состав не изменить — ни замен, ни капитана':'Зафиксируйте состав, когда закончите'}</b>${why?`<span class="ub-warn">${why}</span>`:`<span class="muted" style="font-size:14px">После фиксации состав, капитан и «Тройной капитан» не меняются до стадии «${esc(st)}».</span>`}</div>
+  // идущая стадия уже началась (тестовый прогон): засчитаются только серии, которые начнутся после фиксации
+  const late=lv&&RES[S.played],hint=late?`Стадия «${esc(st)}» уже идёт: очки пойдут за серии, которые начнутся после фиксации. До конца стадии состав не изменить.`
+    :`После фиксации состав, капитан и «Тройной капитан» не меняются до стадии «${esc(st)}».`;
+  el.innerHTML=`<div class="ub"><div class="ub-t"><span class="pf-lab">${confirmLock?'Точно фиксируем?':'Состав готов?'}</span><b>${confirmLock?(late?'До конца стадии «'+esc(st)+'» состав не изменить — ни замен, ни капитана':'До стадии «'+esc(st)+'» состав не изменить — ни замен, ни капитана'):'Зафиксируйте состав, когда закончите'}</b>${why?`<span class="ub-warn">${why}</span>`:`<span class="muted" style="font-size:14px">${hint}</span>`}</div>
   <div class="ub-a">${confirmLock?`<button class="btn primary" type="button" data-lock-yes>${LOCK_IC}Да, зафиксировать</button><button class="btn" type="button" data-lock-no>Отмена</button>`:`<button class="btn primary" type="button" data-lock ${why?'disabled':''}>${LOCK_IC}Зафиксировать состав</button>`}</div></div>`;
   const b=el.querySelector('[data-lock]');if(b)b.onclick=()=>{confirmLock=true;renderLock()};
   const y=el.querySelector('[data-lock-yes]');if(y)y.onclick=lockLineup;
@@ -1238,10 +1314,19 @@ function mcMapTable(m,mine,capId,k){const head=`<tr><th>Игрок</th><th class
 function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S.played,NS()-1):MC.stage;MC.stage=sel;
   const s=STREAMS[TOUR];
   const strm=`<div class="mc-streams"><span class="pf-lab">Трансляции</span>${s?s.map(([t,u])=>`<a class="btn" href="${u}" target="_blank" rel="noopener">${t} ↗</a>`).join(''):'<span class="muted">появятся после анонса организатора</span>'}</div>`;
-  const tabs=`<div class="pf-row">${STAGES.map((st,i)=>`<button class="pf-chip" type="button" aria-pressed="${sel===i}" data-mc-stage="${i}">${st.short} · ${i<S.played?'сыграно':i===S.played?st.date:'позже'}</button>`).join('')}</div>`;
+  const tabs=`<div class="pf-row">${STAGES.map((st,i)=>`<button class="pf-chip" type="button" aria-pressed="${sel===i}" data-mc-stage="${i}">${st.short} · ${i<S.played?'сыграно':i===S.played?(RES[i]&&RES[i].live?'идёт':st.date):'позже'}</button>`).join('')}</div>`;
   let body='';
-  if(sel<S.played){const R=RES[sel],sn=S.snaps[sel],mine=new Set(ROLES.map(k=>sn.lineup[k]).filter(x=>x!=null));let lr='';
-    body=R.log.map((x,i)=>{const h=x.round!==lr?`<div class="mc-round">${esc(x.round)}</div>`:'';lr=x.round;
+  // идущая стадия на живых данных: сыгранные и идущие серии с картами, дальше — расписание
+  if(LIVEV()&&RES[sel]&&RES[sel].live){const R=RES[sel],st=RP().stages[sel],sn=S.snaps[sel],lu=(sn||S).lineup,mine=new Set(ROLES.map(k=>lu[k]).filter(x=>x!=null)),myTeams=new Set([...mine].map(id=>P[id].team));let lr='';
+    body=st.series.map((x,i)=>{const lg=R.log[i],rd=x.group?'Группа '+x.group:x.label,h=rd!==lr?`<div class="mc-round">${esc(rd)}</div>`:'';lr=rd;
+      if(!lg){const a=tixOf(x.a),b=tixOf(x.b);
+        return h+`<div class="mc-ser mc-up"><div class="mc-sum"><span class="mc-round" style="margin:0">${x.at?esc(hhmm(x.at)):''}</span><span class="mc-t ${myTeams.has(a)?'w':''}">${a>=0?esc(tn(a)):'определится'}</span><span class="mc-sc">vs</span><span class="mc-t r ${myTeams.has(b)?'w':''}">${b>=0?esc(tn(b)):'определится'}</span><span class="mc-meta">${mcStreamLink(i,0)}</span></div></div>`}
+      const mineN=lg.maps.length?lg.maps[0].ms.filter(([id])=>mine.has(id)).length:0;
+      return h+`<details class="mc-ser"><summary><span class="mc-t ${!lg.live&&lg.wa>lg.wb?'w':''}">${esc(tn(lg.a))}</span><span class="mc-sc">${lg.wa}:${lg.wb}</span><span class="mc-t r ${!lg.live&&lg.wb>lg.wa?'w':''}">${esc(tn(lg.b))}</span><span class="mc-meta">${lg.live?'<span class="badge win">идёт</span>':''}${mineN?`<span class="pf-lab" style="color:var(--accent)">твоих: ${mineN}</span>`:''}${mcStreamLink(i,!lg.live)}<span class="mc-open">Карты ▾</span></span></summary>
+        ${lg.maps.map((m,j)=>`<div class="mc-map"><div class="pf-lab">Карта ${j+1} · победа ${esc(tn(m.aw?lg.a:lg.b))}${m.tier!=='parsed'?' · очки предварительные: ждём разбор реплея':''}</div>${mcMapTable(m,mine,sn?sn.captain:S.captain,sel)}</div>`).join('')}</details>`}).join('')
+      +`<p class="note">Карта появляется через несколько минут после конца (OpenDota); идущую карту видно только после завершения. ${(S.lockAt||{})[sel]?'Твои очки — за серии, начавшиеся после фиксации состава ('+esc(hhmm(S.lockAt[sel]))+').':'Состав на эту стадию не зафиксирован — твоих очков пока нет.'}</p>`;
+  }else if(sel<S.played){const R=RES[sel],sn=S.snaps[sel],mine=new Set(ROLES.map(k=>sn.lineup[k]).filter(x=>x!=null));let lr='';
+    body=R.log.map((x,i)=>{if(!x)return'';const h=x.round!==lr?`<div class="mc-round">${esc(x.round)}</div>`:'';lr=x.round;
       const mineN=x.maps[0].ms.filter(([id])=>mine.has(id)).length;
       return h+`<details class="mc-ser"><summary><span class="mc-t ${x.wa>x.wb?'w':''}">${esc(tn(x.a))}</span><span class="mc-sc">${x.wa}:${x.wb}</span><span class="mc-t r ${x.wb>x.wa?'w':''}">${esc(tn(x.b))}</span><span class="mc-meta">${mineN?`<span class="pf-lab" style="color:var(--accent)">твоих: ${mineN}</span>`:''}${mcStreamLink(i,1)}<span class="mc-open">Карты ▾</span></span></summary>
         ${x.maps.map((m,j)=>`<div class="mc-map"><div class="pf-lab">Карта ${j+1} · победа ${esc(tn(m.aw?x.a:x.b))}</div>${mcMapTable(m,mine,sn.captain,sel)}</div>`).join('')}</details>`}).join('');
@@ -1249,8 +1334,8 @@ function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S
     body=ups.length?`<p class="muted" style="margin:0">${STAGES[sel].name} · ${STAGES[sel].date} · время матчей уточняется по расписанию организатора</p>`+ups.map((x,i)=>`<div class="mc-ser mc-up"><div class="mc-sum"><span class="mc-round" style="margin:0">${esc(x.round)}</span><span class="mc-t ${x.a!=null&&myTeams.has(x.a)?'w':''}">${x.a!=null?esc(tn(x.a)):'определится'}</span><span class="mc-sc">vs</span><span class="mc-t r ${x.b!=null&&myTeams.has(x.b)?'w':''}">${x.b!=null?esc(tn(x.b)):esc(x.pb||(x.a!=null?'победитель 1/4':'определится'))}</span><span class="mc-meta">${mcStreamLink(i,0)}</span></div></div>`).join('')+`<p class="note">Жирным — команды твоих игроков.</p>`:'<p class="muted">Пары определятся по итогам прошлой стадии.</p>';
   }else body=`<p class="muted">Пары станут известны после стадии «${STAGES[sel-1].name}».</p>`;
   let mine='';
-  if(S.played){const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
-      const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'')}<div class="pt num" style="margin-left:44px">${fmt((RES[k].pts[id]||0)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
+  if(S.snaps.length){const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
+      const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'')}<div class="pt num" style="margin-left:44px">${fmt(myPts(k,id)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
     const pen='<tr><td class="muted">Штраф</td>'+S.snaps.map(sn=>`<td class="num">${sn.penalty?'−'+sn.penalty:'—'}</td>`).join('')+'</tr>';
     const tot='<tr><td><b>Итого</b></td>'+S.snaps.map((_,k)=>`<td class="num w">${fmt(stageScore(k))}</td>`).join('')+'</tr>';
     mine=`<div class="sec-h"><h2>Мой состав по стадиям</h2></div><div class="tbox"><table><thead><tr><th>Поз.</th>${S.snaps.map((_,i)=>`<th>${STAGES[i].name}</th>`).join('')}</tr></thead><tbody>${rows}${pen}${tot}</tbody></table></div>`}
@@ -1282,30 +1367,32 @@ function buildWorld(){BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7));cons
         const c=BYROLE[ri].filter(p=>alive.has(p.team)&&(cnt[p.team]||0)<MAX_TEAM&&priceAt(p,k)<=cash);
         if(!c.length)continue;const pk=pickWeighted(c,r);b.cash=cash-priceAt(pk,k);b.lu[ri]=pk.id;tr++}
         b.pen=Math.max(0,tr-1)*TR_COST})}
-    if(k<S.played){const R=RES[k];
+    if(k<RES.length){const R=RES[k];
       bots.forEach(b=>{let cap=b.lu[0],best=-1e9;b.lu.forEach(id=>{const v=ratingAt(P[id],k)+r()*6;if(v>best){best=v;cap=id}});
         let sc=0;b.lu.forEach(id=>sc+=(R.pts[id]||0)*(id===cap?2:1));sc=r1(sc-b.pen);b.pen=0;b.per.push(sc);b.tot=r1(b.tot+sc)})}}
   const own=new Array(P.length).fill(0);bots.forEach(b=>b.lu.forEach(id=>own[id]++));
-  WORLD={key:S.seed+':'+S.played,bots,own}}
-function world(){if(!WORLD||WORLD.key!==S.seed+':'+S.played)buildWorld();return WORLD}
+  WORLD={key:worldKey(),bots,own}}
+const worldKey=()=>S.seed+':'+S.played+':'+RES.length+':'+(LIVEV()?RP().generated:'');
+function world(){if(!WORLD||WORLD.key!==worldKey())buildWorld();return WORLD}
 const ownPct=id=>Math.round(world().own[id]/NBOTS*1000)/10;
 function renderGlobal(){const el=$('panel-global'),W=world(),n=NBOTS+1;
   const top=P.slice().sort((a,b)=>W.own[b.id]-W.own[a.id]).slice(0,5);
   const popular=`<div class="card"><h3>Самые популярные игроки</h3><div class="tbox" style="border:0"><table><tbody>${top.map(p=>`<tr><td>${who(p,'',1)}</td><td class="r num">${ownPct(p.id)}%</td></tr>`).join('')}</tbody></table></div><p class="note">Кого чаще всего берут в общий состав. Непопулярный игрок, который выстрелит, даёт больше всего отрыва.</p></div>`;
-  if(!S.played){el.innerHTML=`<div class="sec-h"><div><h2>Рейтинг турнира</h2><p>Все участники режима с бюджетом — ${n.toLocaleString('ru')} человек в прототипе. Таблица появится после первой стадии.</p></div></div><div class="grid2"><div class="card"><h3>Пока пусто</h3><p class="empty-note">Нажмите «Сыграть: Группы» — здесь появятся ваше место, топ и соседи по таблице.</p></div>${popular}</div>`;return}
-  const me=myTotal(),last=S.played-1,mePrev=r1(me-stageScore(last));
+  // идущий турнир: таблица — с первых сыгранных серий (идущая стадия считается частично)
+  if(!RES.length){el.innerHTML=`<div class="sec-h"><div><h2>Рейтинг турнира</h2><p>Все участники режима с бюджетом — ${n.toLocaleString('ru')} человек в прототипе. Таблица появится после первой стадии.</p></div></div><div class="grid2"><div class="card"><h3>Пока пусто</h3><p class="empty-note">${LIVEV()?'Таблица появится с первыми сыгранными сериями.':'Нажмите «Сыграть: Группы» — здесь появятся ваше место, топ и соседи по таблице.'}</p></div>${popular}</div>`;return}
+  const me=myTotal(),last=RES.length-1,mePrev=r1(me-stageScore(last));
   const rows=W.bots.map(b=>({name:b.name,per:b.per,tot:b.tot,prev:r1(b.tot-b.per[last])}));
-  rows.push({name:'Вы',per:S.snaps.map((_,k)=>stageScore(k)),tot:me,prev:mePrev,me:true});
+  rows.push({name:'Вы',per:RES.map((_,k)=>stageScore(k)),tot:me,prev:mePrev,me:true});
   rows.sort((a,b)=>b.tot-a.tot);
   const prevRank=new Map(rows.slice().sort((a,b)=>b.prev-a.prev).map((x,i)=>[x,i+1]));
   const myIdx=rows.findIndex(x=>x.me),rank=myIdx+1,pct=Math.max(0.1,Math.round(rank/n*1000)/10),move=prevRank.get(rows[myIdx])-rank;
   const tot=rows.map(x=>x.tot).sort((a,b)=>a-b),median=tot[Math.floor(tot.length/2)],best=tot[tot.length-1];
   const show=new Set();for(let i=0;i<10;i++)show.add(i);for(let i=myIdx-3;i<=myIdx+3;i++)if(i>=0&&i<rows.length)show.add(i);
-  let html='',prev=-1;[...show].sort((a,b)=>a-b).forEach(i=>{if(prev>=0&&i>prev+1)html+=`<tr><td colspan="${S.played+4}" class="muted" style="text-align:center">· · ·</td></tr>`;prev=i;const x=rows[i],mv=S.played>1?prevRank.get(x)-(i+1):0;
+  let html='',prev=-1;[...show].sort((a,b)=>a-b).forEach(i=>{if(prev>=0&&i>prev+1)html+=`<tr><td colspan="${RES.length+4}" class="muted" style="text-align:center">· · ·</td></tr>`;prev=i;const x=rows[i],mv=S.played>1?prevRank.get(x)-(i+1):0;
     html+=`<tr class="${x.me?'mine':''}"><td class="r num">${(i+1).toLocaleString('ru')}</td><td class="pn">${x.name}</td>${x.per.map(v=>`<td class="r num">${fmt(v)}</td>`).join('')}<td class="r num w">${fmt(x.tot)}</td><td class="r">${mv?dlt(mv):''}</td></tr>`});
   el.innerHTML=`<div class="status-strip"><div><div class="big">Место ${rank.toLocaleString('ru')} из ${n.toLocaleString('ru')}</div><div class="muted" style="font-size:14px">Топ ${pct}% · ${fmt(me)} очков · медиана ${fmt(median)} · лидер ${fmt(best)}</div></div><span class="spacer"></span>${S.played>1&&move?`<div class="big">${dlt(move)}</div>`:''}</div>
   <div class="grid2"><div style="display:grid;gap:12px"><div class="sec-h"><div><h2>Рейтинг турнира</h2><p>Все участники режима с бюджетом. В прототипе — ${NBOTS.toLocaleString('ru')} ботов с разными стратегиями; в рабочей версии — все зарегистрированные.</p></div></div>
-  <div class="tbox"><table><thead><tr><th class="r">#</th><th>Участник</th>${S.snaps.map((_,k)=>`<th class="r">${STAGES[k].short}</th>`).join('')}<th class="r">Всего</th><th class="r">Δ</th></tr></thead><tbody>${html}</tbody></table></div></div>${popular}</div>`}
+  <div class="tbox"><table><thead><tr><th class="r">#</th><th>Участник</th>${RES.map((_,k)=>`<th class="r">${STAGES[k].short}${RES[k].live?' · идёт':''}</th>`).join('')}<th class="r">Всего</th><th class="r">Δ</th></tr></thead><tbody>${html}</tbody></table></div></div>${popular}</div>`}
 
 // правила турнира на реальных данных — из выгрузки (02 §5–6 после решений 12.10.2026)
 function renderRulesReal(R){const sc=R.scoring,w=sc.weights,L=[['Убийство',w.kill],['Помощь',w.assist],['Смерть',w.death],['Добивание',w.last_hit],
@@ -1414,16 +1501,20 @@ function renderOverview(){
   let nextT,nextP,nextGo,nextL;
   if(!full){nextT='Соберите состав';nextP='Пять игроков, по одному на позицию, и капитан. Бюджет — 48.';nextGo='team';nextL='К составу'}
   else if(!done){nextT=S.played?`Окно трансферов перед стадией «${STAGES[S.played].name}»`:`Всё готово к старту · ${STAGES[0].date}`;nextP=S.played?`Бесплатных трансферов: ${Math.max(0,FREE_TR-transfers())}. Замените игроков выбывших команд и проверьте капитана.`:`${daysLeft()} До старта состав меняется без ограничений, после — один бесплатный трансфер между стадиями.`;nextGo=S.played?'market':'team';nextL=S.played?'На рынок':'Проверить состав'}
+  // идущий турнир: главное действие — зафиксировать состав на текущую стадию (очки идут с серий после фиксации)
+  const lv=LIVEV(),cur=RES[S.played];
+  if(lv&&full&&!done){if(!S.locked){nextT=`Зафиксируйте состав на стадию «${STAGES[S.played].name}»`;nextP=cur?'Стадия уже идёт: очки пойдут за серии, которые начнутся после фиксации.':`${daysLeft()} До фиксации состав меняется без ограничений.`;nextGo='team';nextL='К фиксации'}
+    else{nextT=`Состав на стадию «${STAGES[S.played].name}» зафиксирован`;nextP='Очки начисляются по мере сыгранных карт — данные OpenDota обновляются каждые несколько минут.';nextGo='matches';nextL='Матчи и очки'}}
   if(full&&!done){const p=pkStats();if(p.filled<p.cur.length&&S.played>0||p.filled===0&&S.played===0){nextP+=` Прогнозы на стадию: заполнено ${p.filled} из ${p.cur.length} — <a href="#p-picks" style="color:var(--ink)">заполнить →</a>`}}
   if(done){nextT=`Турнир завершён · чемпион ${tn(CTX.champ)}`;nextP=`Ваш итог — ${fmt(myTotal())} очков.`;nextGo='global';nextL='Итоговая таблица'}
   const lu=ROLES.map(k=>S.lineup[k]).filter(x=>x!=null).map(id=>P[id]);
-  const rk=S.played?myRank():null,last=S.played?stageScore(S.played-1):null;
+  const rk=RES.length?myRank():null,last=RES.length?stageScore(RES.length-1):null,lastL=RES.length&&RES[RES.length-1].live?'Идущая стадия':'Последняя стадия';
   $('dash').innerHTML=`
   <div class="dcard next"><div class="dh"><h3>Что сделать сейчас</h3></div><div class="big" style="font-size:22px">${nextT}</div><div class="muted">${nextP}</div><div><a class="btn primary" href="#p-${nextGo}">${nextL}</a></div></div>
   <div class="dcard"><div class="dh"><h3>Мой состав</h3><a class="muted" href="#p-team">Открыть →</a></div><div class="big">${fmt(myTotal())} <span class="muted" style="font-size:14px">очков</span></div>
     <div class="minis">${lu.map(p=>ava(p)).join('')}</div>
-    <div class="row"><span>Капитан <b>${S.captain!=null?P[S.captain].nick:'—'}</b></span><span>Банк <b>${fmt(S.cash)}</b></span>${last!=null?`<span>Последняя стадия <b>${fmt(last)}</b></span>`:''}</div></div>
-  <div class="dcard"><div class="dh"><h3>Матчи</h3><a class="muted" href="#p-matches">Открыть →</a></div><div class="big" style="font-size:22px">${S.played>=NS()?"Турнир завершён":STAGES[S.played].name}</div><div class="row"><span>${S.played>=NS()?"Все серии и статистика по картам":STAGES[S.played].date+" · "+STAGES[S.played].meta}</span></div></div>
+    <div class="row"><span>Капитан <b>${S.captain!=null?P[S.captain].nick:'—'}</b></span><span>Банк <b>${fmt(S.cash)}</b></span>${last!=null?`<span>${lastL} <b>${fmt(last)}</b></span>`:''}</div></div>
+  <div class="dcard"><div class="dh"><h3>Матчи</h3><a class="muted" href="#p-matches">Открыть →</a></div><div class="big" style="font-size:22px">${S.played>=NS()?"Турнир завершён":STAGES[S.played].name}</div><div class="row"><span>${S.played>=NS()?"Все серии и статистика по картам":lv&&cur?'Идёт · сыграно серий: '+cur.log.filter(x=>x&&!x.live).length+' из '+cur.log.length:STAGES[S.played].date+" · "+STAGES[S.played].meta}</span></div></div>
   <div class="dcard"><div class="dh"><h3>Рейтинг турнира</h3><a class="muted" href="#p-global">Открыть →</a></div>${rk?`<div class="big">${rk.rank.toLocaleString('ru')} <span class="muted" style="font-size:14px">из ${rk.n.toLocaleString('ru')}</span></div><div class="row"><span>Топ <b>${Math.max(.1,Math.round(rk.rank/rk.n*1000)/10)}%</b></span></div>`:`<div class="muted">Место появится после группового этапа. Сейчас в рейтинге ${ (NBOTS+1).toLocaleString('ru')} участников.</div>`}</div>
   ${(()=>{const p=pkStats();return`<div class="dcard"><div class="dh"><h3>Прогнозы</h3><a class="muted" href="#p-picks">Открыть →</a></div><div class="big">${p.earned} <span class="muted" style="font-size:14px">из ${PK_MAX} баллов</span></div><div class="row">${p.done?`<span>${p.medal>=0?'Медаль: <b>'+PK_MED[p.medal][0]+'</b>':'Без медали'}</span>`:`<span>Заполнено <b>${p.filled} из ${p.cur.length}</b></span><span>${p.medal>=0?PK_MED[p.medal][0]:'медали пока нет'}</span>`}</div></div>`})()}`}
 // ---------- участники, формат и сетка турнира (поле participants в tournaments.json): данные Liquipedia и организатора
@@ -1465,7 +1556,7 @@ function pxOwn(){if(PX_OWN&&PX_OWN.t===TOUR)return PX_OWN.own;const r=mulberry32
   BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7)); // веса по стартовому рейтингу, как в buildWorld
   for(let i=0;i<N;i++)botLineup(r).lu.forEach(id=>own[id]++);BOT_W=keep;PX_OWN={t:TOUR,own:own.map(v=>v/N)};return PX_OWN.own}function pxMine(){if(!S.played)return'<p class="muted" style="margin:0">Ты в этом турнире участия не принимал.</p>';
   const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
-    const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'',1)}<div class="pt num" style="margin-left:44px">${fmt((RES[k].pts[id]||0)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
+    const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'',1)}<div class="pt num" style="margin-left:44px">${fmt(myPts(k,id)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
   const tot='<tr><td><b>Итого</b></td>'+S.snaps.map((_,k)=>`<td class="num w">${fmt(stageScore(k))}</td>`).join('')+'</tr>';
   return`<div class="pf-row" style="gap:24px;align-items:baseline"><span><b class="num" style="font-size:28px">${fmt(myTotal())}</b> <span class="muted">очков</span></span><span><b>${myRank().rank.toLocaleString('ru')}-е</b> <span class="muted">место из ${(NBOTS+1).toLocaleString('ru')}</span></span>${S.played<NS()?`<span class="muted">сыграно стадий: ${S.played} из ${NS()}</span>`:''}</div>
   <div class="tbox"><table><thead><tr><th>Поз.</th>${S.snaps.map((_,i)=>`<th>${esc(STAGES[i].name)}</th>`).join('')}</tr></thead><tbody>${rows}${tot}</tbody></table></div>`}
@@ -1532,6 +1623,7 @@ const PK_MED=[['Бронза','Б',.55,'#B97A43'],['Серебро','С',.65,'#A
 // PARI Universe: группы 2×10×2 = 40 · плей-офф 11×2 = 22 · финальные дни 3×2 = 6. В обоих по 34 серии — максимум один
 const PK_MAX=68;
 const PKV={stage:null};
+let pkConfirm=false;
 const byStr=a=>a.slice().sort((x,y)=>STR[y]-STR[x]);
 function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],pk=S.pk||{};
   const ser=(id,a,b,round,slot,bo)=>{const q={id,k,type:'ser',a:a??null,b:b??null,round,slot,bo:bo||3,max:2,cond:false};Q.push(q);return q};
@@ -1565,9 +1657,13 @@ function pkQuestions(k,ctx){const C=ctx||CTX,Q=[],pk=S.pk||{};
   return Q}
 // итог матча — по месту в сетке (номер серии в логе стадии), а не по паре: пара дальнего матча могла не совпасть с прогнозом
 function pkResolve(q,R,C){if(!R)return null;
-  if(q.type==='ser'){const x=R.log[q.slot];return x?{w:x.wa>x.wb?x.a:x.b,sc:Math.max(x.wa,x.wb)+':'+Math.min(x.wa,x.wb),pair:[x.a,x.b]}:null}
+  if(q.type==='ser'){const x=R.log[q.slot];return x&&!x.live?{w:x.wa>x.wb?x.a:x.b,sc:Math.max(x.wa,x.wb)+':'+Math.min(x.wa,x.wb),pair:[x.a,x.b]}:null}
   if(q.type==='two')return{set:q.opts.filter(t=>R.aliveAfter.has(t))};
   return{w:q.id==='ubf'?C.gfA:C.champ}}
+// прогноз можно менять, пока стадия открыта, прогнозы на неё не зафиксированы и (на живых данных) серия ещё не началась
+function pkEditable(q){if(!q||q.k!==S.played||S.played>=NS()||(S.pkLock||{})[q.k])return false;
+  if(LIVEV()&&q.type==='ser'){const x=((RP().stages[q.k]||{}).series||[])[q.slot];if(x&&x.status!=='scheduled')return false}
+  return true}
 const pkPick=(q,a)=>a&&a.w!=null&&(a.w===q.a||a.w===q.b)?a.w:null; // победитель выбран из пары матча (пара могла смениться)
 const pkScores=q=>q.bo===5?['3:0','3:1','3:2']:['2:0','2:1'];
 function pkScore(q,a,res){if(!a||!res)return 0;
@@ -1577,7 +1673,7 @@ const pkFilled=(q,a)=>!!a&&(q.type==='ser'?pkPick(q,a)!=null&&!!a.sc:q.type==='t
 const pkMedalOf=sh=>{let m=-1;PK_MED.forEach((x,i)=>{if(sh>=x[2]-1e-9)m=i});return m};
 const pkNeed=i=>Math.ceil(PK_MAX*PK_MED[i][2]-1e-9);
 function pkStats(){const pk=S.pk||{};let earned=0,settled=0,open=0,filled=0;
-  for(let k=0;k<S.played;k++)pkQuestions(k).forEach(q=>{settled+=q.max;earned+=pkScore(q,pk[q.id],pkResolve(q,RES[k],CTX))});
+  for(let k=0;k<RES.length;k++)pkQuestions(k).forEach(q=>{const r=pkResolve(q,RES[k],CTX);if(!r&&k>=S.played)return;settled+=q.max;earned+=pkScore(q,pk[q.id],r)});
   const cur=S.played<NS()?pkQuestions(S.played):[];cur.forEach(q=>{open+=q.max;if(pkFilled(q,pk[q.id]))filled++});
   const left=PK_MAX-settled,medal=pkMedalOf(earned/PK_MAX),best=pkMedalOf((earned+left)/PK_MAX);
   return{earned,settled,left,cur,filled,open,medal,best,done:S.played>=NS(),share:settled?earned/settled:0}}
@@ -1594,7 +1690,7 @@ function pkCard(q,edit,res){const a=(S.pk||{})[q.id]||{},got=res?pkScore(q,a,res
   else{const set=q.type==='two'?(a.set||[]):[a.w];
     body=`<div class="pk-opts">${q.opts.map(t=>tb(t,set.includes(t),`data-pk="${q.id}" data-pk-t="${t}"`,res?((q.type==='two'?res.set.includes(t):res.w===t)?'pk-win':''):'')).join('')}</div>`}
   return`<div class="pk-q ${res?'pk-res':''}">${head}${body}</div>`}
-function pkClick(b){const id=b.dataset.pk,k=S.played,q=pkQuestions(k).find(x=>x.id===id);if(!q)return;S.pk=S.pk||{};const a=S.pk[id]=S.pk[id]||{};
+function pkClick(b){const id=b.dataset.pk,k=S.played,q=pkQuestions(k).find(x=>x.id===id);if(!q||!pkEditable(q))return;S.pk=S.pk||{};const a=S.pk[id]=S.pk[id]||{};
   if(b.dataset.pkW!=null){const w=+b.dataset.pkW;if(a.w!==w){a.w=w}}
   else if(b.dataset.pkSc){a.sc=b.dataset.pkSc}
   else if(b.dataset.pkT!=null){const t=+b.dataset.pkT;if(q.type==='one')a.w=t;else{a.set=a.set||[];const i=a.set.indexOf(t);if(i>=0)a.set.splice(i,1);else{a.set.push(t);if(a.set.length>2)a.set.shift()}}}
@@ -1602,10 +1698,10 @@ function pkClick(b){const id=b.dataset.pk,k=S.played,q=pkQuestions(k).find(x=>x.
 // ---------- прогнозы в виде сетки: группы GSL и плей-офф double elimination (вопросы и баллы — прежние: pkQuestions/pkScore)
 const bkTeam=t=>t==null?null:{n:TEAMS[t].name,tag:TEAMS[t].tag,hue:HUE[t]};
 // узел сетки: o={k,label,a,b,pa,pb,q,log,ghostA,ghostB}; q — вопрос-серия, если её можно прогнозировать
-function bkNode(o,sel){const pk=S.pk||{},q=o.q,a=q?pk[q.id]||{}:{},edit=q&&q.k===S.played&&S.played<NS(),
+function bkNode(o,sel){const pk=S.pk||{},q=o.q,a=q?pk[q.id]||{}:{},edit=pkEditable(q),
     res=q&&o.log?pkResolve(q,RES[q.k],CTX):null,hl=o.k===sel,lg=o.log,A=lg?lg.a:o.a,B=lg?lg.b:o.b,aw=q?pkPick(q,a):null;
-  const win=lg?(lg.wa>lg.wb?lg.a:lg.b):null;
-  const row=(t,ph,ghost,sc)=>{const T=t!=null?TEAMS[t]:null,picked=q&&aw!=null&&aw===t,cls=['bk-t',lg&&t===win?'win':'',picked?'pick':'',ghost?'ghost':'',lg&&t!==win?'lose':''].join(' ');
+  const done=lg&&!lg.live,win=done?(lg.wa>lg.wb?lg.a:lg.b):null;
+  const row=(t,ph,ghost,sc)=>{const T=t!=null?TEAMS[t]:null,picked=q&&aw!=null&&aw===t,cls=['bk-t',done&&t===win?'win':'',picked?'pick':'',ghost?'ghost':'',done&&t!==win?'lose':''].join(' ');
     const inner=`${T?tBadge(T.tag,T.hue):`<span class="tlogo bk-empty"></span>`}<span class="bk-n">${T?esc(T.name):esc(ph||'—')}${ghost?' <i>твой прогноз</i>':''}</span>${sc!=null?`<b class="num">${sc}</b>`:picked&&!lg?'<b class="bk-mark">✓</b>':''}`;
     return edit&&t!=null?`<button type="button" class="${cls}" aria-pressed="${picked}" data-pk="${q.id}" data-pk-w="${t}">${inner}</button>`:`<div class="${cls}">${inner}</div>`};
   const scA=lg?lg.wa:null,scB=lg?lg.wb:null;
@@ -1613,7 +1709,7 @@ function bkNode(o,sel){const pk=S.pk||{},q=o.q,a=q?pk[q.id]||{}:{},edit=q&&q.k==
   if(edit)foot=(q.a==null||q.b==null)?`<div class="bk-foot">сначала спрогнозируй предыдущие матчи</div>`
     :`<div class="bk-sc">${pkScores(q).map(sc=>`<button type="button" class="pf-chip" aria-pressed="${a.sc===sc}" ${aw!=null?`data-pk="${q.id}" data-pk-sc="${sc}"`:'disabled'}>${aw!=null?esc(TEAMS[aw].tag)+' ':''}${sc}</button>`).join('')}</div>`;
   else if(res){const got=pkScore(q,a,res);foot=`<div class="bk-foot ${got?'ok':''}">${a.w!=null?'твой: '+esc(TEAMS[a.w].tag)+' '+(a.sc||''):'нет прогноза'} · <b>${got?'+'+got:'0'}</b></div>`}
-  return`<div class="bk-node ${hl?'hl':''} ${edit?'open':''}"><span class="bk-lab">${esc(o.label)}</span>${row(A,o.pa,!lg&&o.ghostA,scA)}${row(B,o.pb,!lg&&o.ghostB,scB)}${foot}</div>`}
+  return`<div class="bk-node ${hl?'hl':''} ${edit?'open':''}"><span class="bk-lab">${esc(o.label)}${lg&&lg.live?' · идёт':!lg&&q&&!edit&&LIVEV()&&q.k===S.played&&!(S.pkLock||{})[q.k]?' · закрыто':''}</span>${row(A,o.pa,!lg&&o.ghostA,scA)}${row(B,o.pb,!lg&&o.ghostB,scB)}${foot}</div>`}
 
 function bkGroups(sel){const k=0,Q=pkQuestions(0),lg=S.played>0?RES[0].log:null;
   return`<div class="bk-groups">${Object.keys(GROUPS).map((g,gi)=>{const[t1,t2,t3,t4]=GROUPS[g],f=id=>Q.find(x=>x.id===id);
@@ -1660,15 +1756,16 @@ function rrMyTable(g){const pk=S.pk||{},res=pkQuestions(0).map((q,i)=>{const x=r
     const lo=a.sc==='2:1'?1:0;return{g,a:x.a,b:x.b,wa:w===x.a?2:lo,wb:w===x.b?2:lo}});
   return rrTable(g,res)}
 function rrTableHtml(rows,real){return`<table class="bk-tab"><thead><tr><th class="r">#</th><th>Команда</th><th class="r" title="Очко за каждую выигранную карту">Очки</th><th class="r">Серии</th></tr></thead><tbody>${rows.map((x,i)=>`<tr class="${i<4?'adv':'out'}"><td class="r num">${i+1}</td><td>${pkSw(x.t)} ${esc(tn(x.t))}</td><td class="r num">${x.pts}</td><td class="r num">${x.sw}–${x.sl}</td></tr>`).join('')}</tbody></table>
-  <span class="muted" style="font-size:12px">${real?'Итог группы: 1–4 — в плей-офф, 5-е выбывает.':'По твоим прогнозам: очко за карту по выбранному счёту. 1–4 — в плей-офф.'}</span>`}
-function bkRR(sel){const Q=pkQuestions(0),sch=rrSchedule(),lg=S.played>0?RES[0].log:null;
+  <span class="muted" style="font-size:12px">${real===2?'По сыгранным сериям — обновляется по ходу групп. 1–4 — в плей-офф.':real?'Итог группы: 1–4 — в плей-офф, 5-е выбывает.':'По твоим прогнозам: очко за карту по выбранному счёту. 1–4 — в плей-офф.'}</span>`}
+function bkRR(sel){const Q=pkQuestions(0),sch=rrSchedule(),lg=RES[0]?RES[0].log:null;
   return`<div class="bk-groups">${Object.keys(GROUPS).map(g=>{const ms=sch.map((x,i)=>({...x,i})).filter(x=>x.g===g),days=[...new Set(ms.map(x=>x.d))];
     const cols=days.map(d=>`<div class="bk-gcol"><span class="pf-lab">Тур ${d+1} · ${esc(rrDay(d))}</span>${ms.filter(x=>x.d===d).map(x=>bkNode({k:0,label:'Bo3',a:x.a,b:x.b,q:Q[x.i],log:lg&&lg[x.i]},sel)).join('')}</div>`).join('');
-    const tab=lg&&CTX.tab?rrTableHtml(CTX.tab[g],1):rrTableHtml(rrMyTable(g),0);
+    const tab=lg&&CTX.tab?rrTableHtml(CTX.tab[g],RES[0].live?2:1):rrTableHtml(rrMyTable(g),0);
     return`<section class="bk-group"><div class="bk-gh"><h3>Группа ${g}</h3><span class="pf-lab">круг · Bo3 · очко за карту</span></div><div class="bk-grow bk-rr">${cols}<div class="bk-gcol bk-adv"><div class="bk-out">${tab}</div></div></div></section>`}).join('')}</div>`}
-const rrDay=d=>((STAGES[0].days||[])[d])||'день '+(d+1);
+const rrDay=d=>{if(LIVEV()){const x=rrSchedule().find(y=>y.d===d);if(x&&x.at)return new Date(x.at).toLocaleDateString('ru',{day:'numeric',month:'short'})}
+  return((STAGES[0].days||[])[d])||'день '+(d+1)};
 // сетка плей-офф PARI Universe; stat — только известные пары и результаты (обзор турнира), без прогнозов
-function bkDE8(sel,stat,empty){const C=empty?{}:CTX,L=k=>!empty&&S.played>k?RES[k].log:null,lg=(k,i)=>{const l=L(k);return l?l[i]:null},Q=k=>!stat&&S.played>=k?pkQuestions(k):[];
+function bkDE8(sel,stat,empty){const C=empty?{}:CTX,L=k=>!empty&&RES[k]?RES[k].log:null,lg=(k,i)=>{const l=L(k);return l?l[i]:null},Q=k=>!stat&&S.played>=k?pkQuestions(k):[];
   const n=o=>bkNode(o,sel),qf=C.qf||[[null,null],[null,null],[null,null],[null,null]],ub=C.ubf||[null,null];
   const pn=(k,id,o,gA,gB)=>{const x=Q(k).find(y=>y.id===id)||null;return n(x?{k,...o,a:x.a,b:x.b,ghostA:gA&&x.a!=null,ghostB:gB&&x.b!=null,q:x}:{k,...o})};
   const col=(h,inner)=>`<div class="bk-col"><span class="pf-lab">${h}</span>${inner}</div>`,stk=(...c)=>`<div class="bk-stack">${c.join('')}</div>`;
@@ -1704,13 +1801,19 @@ function renderPicks(){const el=$('panel-picks');if(!el)return;const st=pkStats(
   let body;
   if(sel<S.played){const Q=pkQuestions(sel),R=RES[sel],sum=pfSum(Q.map(q=>pkScore(q,(S.pk||{})[q.id],pkResolve(q,R,CTX)))),mx=pfSum(Q.map(q=>q.max));
     body=`<p class="muted" style="margin:0">${STAGES[sel].name} · ${sum} из ${mx} баллов</p>`}
-  else if(sel===S.played){const Q=st.cur;
-    body=`<div class="pk-dl ${st.filled<Q.length?'warn':''}"><span><b>${st.filled} из ${Q.length}</b> заполнено</span><span class="muted">Закроются со стартом стадии «${STAGES[sel].name}» · ${STAGES[sel].date}. Пустой прогноз — 0 баллов.</span></div>`}
+  else if(sel===S.played){const Q=st.cur,lk=(S.pkLock||{})[sel];
+    // фиксация прогнозов на стадию: после неё ни один прогноз этой стадии не изменить (как у состава)
+    const lockUi=lk?`<b class="pk-lk">${LOCK_IC}Зафиксировано ${esc(hhmm(lk))}</b>`:pkConfirm?`<span class="pk-lk"><button class="btn primary" type="button" data-pk-lock-yes>${LOCK_IC}Да, зафиксировать</button><button class="btn" type="button" data-pk-lock-no>Отмена</button></span>`
+      :`<button class="btn primary pk-lk" type="button" data-pk-lock>${LOCK_IC}Зафиксировать прогнозы</button>`;
+    body=`<div class="pk-dl ${!lk&&st.filled<Q.length?'warn':''}"><span><b>${st.filled} из ${Q.length}</b> заполнено</span><span class="muted">${lk?'Прогнозы на стадию «'+esc(STAGES[sel].name)+'» зафиксированы — изменить нельзя.':pkConfirm?'После фиксации ни один прогноз этой стадии не изменить.':LIVEV()?'Серия закрывается для прогноза, как только начинается. Пустой прогноз — 0 баллов.':'Закроются со стартом стадии «'+STAGES[sel].name+'» · '+STAGES[sel].date+'. Пустой прогноз — 0 баллов.'}</span>${lockUi}</div>`}
   else body=`<p class="muted">Вопросы появятся, когда станут известны пары — после стадии «${STAGES[sel-1].name}».</p>`;
   body+=FK==='pari'?(sel===0?bkRR(sel):bkDE8(sel)):(sel===0?bkGroups(sel):bkPlayoff(sel));
   el.innerHTML=strip+tabs+body+`<p class="note">Медаль считается от максимума всего турнира (${PK_MAX} балла), пропуски — ноль. Пороги черновые: откалибруем на прошлых турнирах. Прогнозы не влияют на очки фэнтези и лигу сезона.</p>`;
   el.querySelectorAll('[data-pk-stage]').forEach(b=>b.onclick=()=>{PKV.stage=+b.dataset.pkStage;renderPicks()});
-  el.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>pkClick(b))}
+  el.querySelectorAll('[data-pk]').forEach(b=>b.onclick=()=>pkClick(b));
+  const lb=el.querySelector('[data-pk-lock]');if(lb)lb.onclick=()=>{pkConfirm=true;renderPicks()};
+  const ly=el.querySelector('[data-pk-lock-yes]');if(ly)ly.onclick=()=>{S.pkLock=S.pkLock||{};S.pkLock[S.played]=Date.now();pkConfirm=false;save();renderPicks();renderOverview();toast('Прогнозы на стадию зафиксированы')};
+  const ln=el.querySelector('[data-pk-lock-no]');if(ln)ln.onclick=()=>{pkConfirm=false;renderPicks()}}
 
 // ---------- сезон и лиги (docs/03). Новый игрок без лиги: первый турнир сезона (CUR) — калибровка в общей таблице турнира,
 // без группы; лига — по процентилю места, не выше Легенды (§5). Со следующего турнира — группа из 30 человек своей лиги
@@ -1844,7 +1947,7 @@ function hmLive(){const t=TOURS[CUR],on=TOUR===CUR,need=on?ROLES.filter(k=>S.lin
   else{st='Состав готов';line=`Старт ${STAGES[0].date} · до дедлайна состав можно менять сколько угодно`}
   const head=on&&S.played>=NS()?'Турнир завершён':on&&S.played>0?'Идёт сейчас':'Ближайший турнир';
   const rows=on?ROLES.map(role=>{const id=S.lineup[role];if(id==null)return`<div class="hm-row"><span><b>${RN[role]}</b> <span class="pf-lab">пусто</span></span><span></span><span></span></div>`;
-    const p=P[id];let pts=0;S.snaps.forEach((sn,k)=>{if(sn.lineup[role]===id)pts+=(RES[k].pts[id]||0)*(id===sn.captain?(sn.tc?3:2):1)});
+    const p=P[id];let pts=0;S.snaps.forEach((sn,k)=>{if(sn&&sn.lineup[role]===id)pts+=myPts(k,id)*(id===sn.captain?(sn.tc?3:2):1)});
     return`<div class="hm-row"><span><b>${esc(p.nick)}</b>${id===S.captain?'<span class="pf-cap">К ×2</span>':''} <span class="pf-lab">${RN[role]} · ${esc(tn(p.team))}</span></span><span class="pf-lab">${S.played?'за турнир':'цена'}</span><span class="num" style="text-align:right">${S.played?fmt(pts):p.price.toFixed(1)}</span></div>`}).join(''):'';
   return`<section class="hm-now hm-live" data-skin="${t.theme||CUR}" aria-live="polite">
     <div class="hm-head"><div><span class="pf-lab">${head} · ${esc(t.name)} · ${esc(t.dates)}</span><div class="hm-big">${st}</div><span>${line}</span></div>
@@ -1901,6 +2004,10 @@ let rulesDone=false;
 ['f-role','f-sort'].forEach(id=>$(id).onchange=renderMarket);$('f-q').oninput=renderMarket;
 $('lb-role').onchange=renderLobby;$('lb-q').oninput=renderLobby;
 $('lb-seg').querySelectorAll('button').forEach(b=>b.onclick=()=>{lbSeg=b.dataset.v;renderLobby()});
-advanceDraft();save();render();route();})().catch(e=>{console.error(e);document.documentElement.classList.remove('dfi-pending');document.body.insertAdjacentHTML('afterbegin',`<div role="alert" style="margin:16px;padding:14px 16px;border:1px solid #C23848;background:#fff;color:#111;font:15px/1.5 system-ui"><b>Не удалось загрузить данные.</b> ${e.message}<br>Откройте сайт через локальный сервер: <code>python scripts/serve.py</code> → http://localhost:8000</div>`)});
+advanceDraft();save();render();route();
+// идущий турнир: раз в минуту (и при возврате на вкладку) — свежие живые данные; изменились — пересобираем стадии
+async function pollLive(){const t=T();if(!t||!t.live||document.hidden)return;const j=await loadLive(t);if(!j||(RP()&&j.generated===RP().generated))return;
+  REPLAYS[TOUR]=j;replay();WORLD=null;PX_OWN=null;save();render();toast('Новые результаты · '+hhmm(j.generated))}
+setInterval(pollLive,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollLive()});})().catch(e=>{console.error(e);document.documentElement.classList.remove('dfi-pending');document.body.insertAdjacentHTML('afterbegin',`<div role="alert" style="margin:16px;padding:14px 16px;border:1px solid #C23848;background:#fff;color:#111;font:15px/1.5 system-ui"><b>Не удалось загрузить данные.</b> ${e.message}<br>Откройте сайт через локальный сервер: <code>python scripts/serve.py</code> → http://localhost:8000</div>`)});
 </script>
 </body></html>

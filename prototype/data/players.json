@@ -536,5 +536,35 @@
     "id": "kidaro",
     "nick": "Kidaro",
     "account_id": 104334048
+  },
+  {
+    "id": "nightfall",
+    "nick": "Nightfall",
+    "account_id": 124801257,
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "lorenof",
+    "nick": "lorenof",
+    "account_id": 210053851,
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "dm",
+    "nick": "DM",
+    "account_id": 56351509,
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "omar",
+    "nick": "OmaR",
+    "account_id": 152168157,
+    "rating_bonus_tmp": 0
+  },
+  {
+    "id": "gh",
+    "nick": "GH",
+    "account_id": 101356886,
+    "rating_bonus_tmp": 0
   }
 ]

@@ -1,0 +1,34 @@
+# Живые данные идущего турнира для прототипа без моего компьютера: OpenDota → очки по правилам (@df/domain) → JSON
+# в ветку live-feed; сайт читает её через raw.githubusercontent.com (поле live_remote в prototype/data/tournaments.json).
+# Без базы и без секретов. Запуск каждые 3 ч, каждый живёт ~5 ч 45 мин и обновляет данные раз в 3 минуты;
+# concurrency держит один активный и один в очереди — опрос без разрывов.
+# Турнир — TOURNAMENT (slug регламента packages/db/tournaments/). После турнира: Actions → live-feed → «…» → Disable workflow.
+name: live-feed
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/live-feed.yml", ".github/scripts/live-feed.sh", "apps/worker/src/live-feed.ts"]
+concurrency:
+  group: live-feed
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  feed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      TOURNAMENT: pari-universe-1
+      DURATION: "20700"
+      EVERY: "180"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @df/domain --filter @df/sources build
+      - run: bash .github/scripts/live-feed.sh

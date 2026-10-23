@@ -104,6 +104,19 @@
 - В продакшен (реальные пользователи, монетизация) — только с письменного согласия каждого правообладателя.
   Если правообладатель попросит убрать материалы — убрать сразу.
 
+## Живые данные идущего турнира (с 23.10.2026, PARI Universe)
+- Генератор `apps/worker/src/live-feed.ts` (`pnpm --filter @df/worker live-feed <slug> [--out] [--cache]`) — **без базы**: регламент
+  (`packages/db/tournaments/<slug>.json`: league id, стадии, узлы с парами и группами), пул (`prototype/data/pool/<slug>.json`: стартовые
+  рейтинг и цена, позиции) → OpenDota (карты лиги, разбор реплея заказывает сам) → очки `@df/domain` (`mapPoints`, `seriesPoints`, правила
+  2026.10-spec, бонус 5) → серии по узлам регламента (группа — по паре команд, сетка — по ближайшему времени) → `prototype/data/live/<slug>.json`.
+  До разбора реплея карта считается по уровню basic (без оглушений, вардов, стаков), после — пересчитывается. Рейтинг и цена — стартовые.
+  Пишет файл, только если данные изменились (`generated` — время изменения). Кэш разобранных карт — `.cache/live-<slug>.json`.
+- **GitHub Actions** `live-feed` (`.github/workflows/live-feed.yml` + `.github/scripts/live-feed.sh`): каждые 3 ч запуск на ~5 ч 45 мин,
+  опрос раз в 3 минуты, коммит в ветку **live-feed** (`<slug>.json` и кэш). Сайт читает `https://raw.githubusercontent.com/supyooo/dotafentesy/live-feed/<slug>.json`
+  (CDN кэширует до ~5 минут). Без секретов. Турнир — `TOURNAMENT` в workflow; после турнира — выключить (Disable workflow).
+- Перед плей-офф: вписать пары 1/4 в узлы UBQF1–4 регламента (Liquipedia), иначе пары в прогнозах — из посева симуляции до первой карты.
+- Старый `live-poll` (Steam, спайк Slam VIII) — расписание снято 23.10, остался ручной запуск.
+
 ## Хостинг
 - **https://dota-fantasy.pages.dev** — Cloudflare Pages, аккаунт автора (wrangler залогинен на его компьютере).
   Деплой: `npx wrangler pages deploy prototype --project-name dota-fantasy --branch main` (выкладывается только `prototype/`) — из ветки main.

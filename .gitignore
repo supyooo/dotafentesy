@@ -16,5 +16,6 @@ __pycache__/
 .DS_Store
 .turbo/
 .wrangler/
+.cache/
 .claude/settings.local.json
 image-14-104.jpg

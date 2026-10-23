@@ -327,8 +327,13 @@
       {
         "team": "ast",
         "status": "inv",
-        "players": null,
-        "note": "Состав не объявлен: команды ещё нет на Liquipedia"
+        "players": {
+          "carry": "nightfall",
+          "mid": "lorenof",
+          "off": "dm",
+          "soft": "omar",
+          "hard": "gh"
+        }
       },
       {
         "team": "legion",
@@ -342,7 +347,7 @@
         }
       }
     ],
-    "groups": null
+    "groups": {"A": ["ydx", "1w", "og", "tl", "gl"], "B": ["ast", "bb", "pari", "ts", "legion"]}
   },
   {
     "id": "dreamleague-30",

@@ -88,6 +88,8 @@ Slam VIII размечен по Liquipedia (`packages/db/tournaments/blast-slam-
   По матчам Slam VIII: в GamerLegion Yuma заменил Timado; Ainkrad/JaCkky/Jabz/miCKe сменили ники (поле `aliases`).
 - Составы 16 команд в прототипе — из заявок Slam VIII. **Участники Slam IX официально не объявлены** (кроме NAVI). Сверить перед стартом.
 - Запасные источники: STRATZ GraphQL (токен), Steam `GetLiveLeagueGames` (ключ) для live-счёта.
+- **PARI Universe** (league 20395) идёт с 22.10 — прототип на живых данных: генератор `live-feed` (без базы) в GitHub Actions пишет
+  выгрузку в ветку live-feed, сайт читает её и обновляется сам (docs/10 «Живые данные»). Группы и пары — в регламенте `pari-universe-1.json`.
 
 ## Правила работы
 - Не выдумывать данные о реальных игроках: рейтинги, статистику, составы, ID. Брать из API, временное помечать как временное.

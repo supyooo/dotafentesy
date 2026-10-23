@@ -5,7 +5,7 @@
   "starts": "2026-10-21T22:00:00.000Z",
   "ends": "2026-11-01T21:59:59.000Z"
  },
- "generated": "2026-10-23T13:15:48.790Z",
+ "generated": "2026-10-23T13:48:13.004Z",
  "rules": "рейтинг — docs/12 (цепочка от TI 2026, K=20; без карт в базе — дебютант 75); цена v1 — рейтинг + сила команды (02 §6: доля побед на картах за 183 дня до старта, без карт — 50%), шкала по 5–95 перцентилю ожидаемых очков пула",
  "players": {
   "16497807": {
@@ -17,6 +17,16 @@
    "expected": 10.87,
    "source": "BLAST Slam VIII",
    "maps": 29
+  },
+  "56351509": {
+   "nick": "DM",
+   "team": "AST",
+   "position": 3,
+   "rating": 80.9,
+   "price": 7,
+   "expected": 10.39,
+   "source": "PGL Wallachia Season 9",
+   "maps": 41
   },
   "73401082": {
    "nick": "Dukalis",
@@ -83,7 +93,7 @@
    "team": "OG",
    "position": 2,
    "rating": 79.5,
-   "price": 5,
+   "price": 5.5,
    "expected": 9.26,
    "source": "BLAST Slam VIII",
    "maps": 27
@@ -98,12 +108,22 @@
    "source": "BLAST Slam VIII",
    "maps": 22
   },
+  "101356886": {
+   "nick": "GH",
+   "team": "AST",
+   "position": 5,
+   "rating": 82.5,
+   "price": 8.5,
+   "expected": 11.17,
+   "source": "The International 2026",
+   "maps": 19
+  },
   "103735745": {
    "nick": "Saksa",
    "team": "YDX",
    "position": 4,
    "rating": 87.5,
-   "price": 10.5,
+   "price": 11,
    "expected": 12.36,
    "source": "BLAST Slam VIII",
    "maps": 63
@@ -138,6 +158,16 @@
    "source": "BLAST Slam VIII",
    "maps": 41
   },
+  "124801257": {
+   "nick": "Nightfall",
+   "team": "AST",
+   "position": 1,
+   "rating": 80.1,
+   "price": 5.5,
+   "expected": 9.56,
+   "source": "The International 2026",
+   "maps": 14
+  },
   "126212866": {
    "nick": "Saberlight",
    "team": "LEGION",
@@ -167,6 +197,16 @@
    "expected": 11.74,
    "source": "BLAST Slam VIII",
    "maps": 34
+  },
+  "152168157": {
+   "nick": "OmaR",
+   "team": "AST",
+   "position": 4,
+   "rating": 81.6,
+   "price": 6.5,
+   "expected": 9.99,
+   "source": "PGL Wallachia Season 9",
+   "maps": 33
   },
   "152962063": {
    "nick": "miCKe",
@@ -213,7 +253,7 @@
    "team": "BB",
    "position": 3,
    "rating": 79.9,
-   "price": 7.5,
+   "price": 8,
    "expected": 10.83,
    "source": "BLAST Slam VIII",
    "maps": 32
@@ -308,6 +348,16 @@
    "source": "BLAST Slam VIII",
    "maps": 32
   },
+  "210053851": {
+   "nick": "lorenof",
+   "team": "AST",
+   "position": 2,
+   "rating": 84.9,
+   "price": 9.5,
+   "expected": 11.59,
+   "source": "PGL Wallachia Season 9",
+   "maps": 33
+  },
   "218231587": {
    "nick": "not me",
    "team": "TS",
@@ -343,7 +393,7 @@
    "team": "YDX",
    "position": 2,
    "rating": 83.5,
-   "price": 11.5,
+   "price": 12,
    "expected": 12.8,
    "source": "BLAST Slam VIII",
    "maps": 63
@@ -423,7 +473,7 @@
    "team": "TS",
    "position": 5,
    "rating": 80.7,
-   "price": 8.5,
+   "price": 9,
    "expected": 11.35,
    "source": "BLAST Slam VIII",
    "maps": 49
@@ -453,7 +503,7 @@
    "team": "PARI",
    "position": 1,
    "rating": 87.7,
-   "price": 11.5,
+   "price": 12,
    "expected": 12.79,
    "source": "BLAST Slam VIII",
    "maps": 41
@@ -464,6 +514,11 @@
    "chance": 0.515,
    "maps": 46,
    "wins": 24
+  },
+  "AST": {
+   "chance": 0.5,
+   "maps": 0,
+   "wins": 0
   },
   "BB": {
    "chance": 0.583,
@@ -529,7 +584,7 @@
    "5": 0.23457453925444666
   },
   "scale": 15.815057610463919,
-  "lo": 8.502906551125271,
-  "hi": 13.18184227441335
+  "lo": 8.51551977765492,
+  "hi": 13.109157412450154
  }
 }
