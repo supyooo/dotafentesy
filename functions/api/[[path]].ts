@@ -7,7 +7,7 @@
 // и сайт работает без входа (как раньше).
 interface D1Stmt { bind(...v: unknown[]): D1Stmt; first<T>(): Promise<T | null>; all<T>(): Promise<{ results: T[] }>; run(): Promise<unknown> }
 interface D1 { prepare(q: string): D1Stmt; batch(s: D1Stmt[]): Promise<unknown> }
-interface Env { DB?: D1; TELEGRAM_BOT_TOKEN?: string; SESSION_SECRET?: string; TG_CHANNEL?: string; TG_BOT?: string }
+interface Env { DB?: D1; TELEGRAM_BOT_TOKEN?: string; SESSION_SECRET?: string; TG_CHANNEL?: string; TG_BOT?: string; TG_LINK?: string; TG_TITLE?: string }
 interface Ctx { request: Request; env: Env; waitUntil(p: Promise<unknown>): void }
 interface Sess { u: string; t: number; c: number; s: 0 | 1 }
 
@@ -28,6 +28,10 @@ const json = (data: unknown, status = 200, headers: Record<string, string> = {})
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } });
 const enabled = (env: Env) => !!(env.DB && env.TELEGRAM_BOT_TOKEN && env.SESSION_SECRET && env.TG_CHANNEL && env.TG_BOT);
 const channelName = (env: Env) => (env.TG_CHANNEL ?? "").replace(/^@/, "");
+// канал или группа: @username (публичные) или числовой id (приватные, вида -100…); ссылка для кнопки «Подписаться» —
+// TG_LINK (приглашение t.me/+… у приватной), иначе t.me/<username>
+const chatId = (env: Env) => (/^-?\d+$/.test(channelName(env)) ? channelName(env) : "@" + channelName(env));
+const chatLink = (env: Env) => env.TG_LINK || (/^-?\d+$/.test(channelName(env)) ? null : "https://t.me/" + channelName(env));
 
 // Telegram Login Widget: hash = HMAC-SHA256(строки «ключ=значение» по алфавиту через \n, ключ = SHA256(токен бота))
 async function verifyTelegram(d: Record<string, unknown>, token: string) {
@@ -38,7 +42,7 @@ async function verifyTelegram(d: Record<string, unknown>, token: string) {
 }
 // подписка: бот должен быть администратором канала, иначе Telegram не отдаёт участников
 async function isMember(env: Env, tgId: number) {
-  const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent("@" + channelName(env))}&user_id=${tgId}`);
+  const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getChatMember?chat_id=${encodeURIComponent(chatId(env))}&user_id=${tgId}`);
   const j = (await r.json()) as { ok: boolean; result?: { status: string; is_member?: boolean }; description?: string };
   if (!j.ok) throw new Error(j.description ?? "getChatMember");
   const s = j.result!.status;
@@ -69,7 +73,18 @@ async function session(req: Request, env: Env): Promise<{ s: Sess | null; set?: 
 
 export async function onRequest(ctx: Ctx): Promise<Response> {
   const { request: req, env } = ctx, url = new URL(req.url), route = url.pathname.replace(/^\/api\/?/, "").replace(/\/$/, "");
-  if (route === "config") return json({ enabled: enabled(env), bot: env.TG_BOT ?? null, channel: channelName(env) || null });
+  if (route === "config") return json({ enabled: enabled(env), bot: env.TG_BOT ?? null, channel: channelName(env) || null, title: env.TG_TITLE ?? null, link: chatLink(env) });
+  // настройка: пока канал не задан, но токен есть — чаты, куда добавлен бот (id, название, ссылка), чтобы вписать TG_CHANNEL/TG_LINK.
+  // Только чаты самого бота; после настройки (TG_CHANNEL задан) метод выключается
+  if (route === "setup-chats" && env.TELEGRAM_BOT_TOKEN && !env.TG_CHANNEL) {
+    const tg = (m: string, q = "") => fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${m}${q}`).then((r) => r.json() as Promise<{ ok: boolean; result?: any }>);
+    const upd = await tg("getUpdates", "?allowed_updates=" + encodeURIComponent(JSON.stringify(["my_chat_member", "message", "channel_post"])));
+    const chats = new Map<number, any>();
+    for (const u of upd.result ?? []) { const c = (u.my_chat_member ?? u.message ?? u.channel_post)?.chat; if (c && c.type !== "private") chats.set(c.id, c); }
+    const out = [];
+    for (const c of chats.values()) { const g = await tg("getChat", "?chat_id=" + c.id); out.push({ id: c.id, type: c.type, title: c.title, username: c.username ?? null, invite_link: g.result?.invite_link ?? null }); }
+    return json({ ok: upd.ok, chats: out });
+  }
   if (!enabled(env)) return json({ error: "вход не настроен" }, 503);
 
   if (route === "auth" && req.method === "POST") {

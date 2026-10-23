@@ -782,13 +782,14 @@ async function authGate(){let cfg=null;
 const gEsc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // экран входа: сначала «Войти через Telegram» (виджет), потом, если нет подписки, — ссылка на канал и «Проверить подписку»
 function gateScreen(cfg,me){return new Promise(done=>{let el=document.getElementById('gate');if(!el){el=document.createElement('div');el.id='gate';el.className='gate';document.body.appendChild(el)}
-  const ch=gEsc(cfg.channel),link='https://t.me/'+encodeURIComponent(cfg.channel),brand='<div class="gate-brand"><svg class="brand-mark" viewBox="0 0 26 20" aria-hidden="true"><path d="M1 3H8V10H15M1 17H8V10"/><circle cx="20" cy="10" r="3.6"/></svg><span>DOTA FANTASY</span></div>';
-  if(me&&me.auth){el.innerHTML=`<div class="gate-card">${brand}<h1>Подпишись на канал</h1><p>Играть на сайте могут подписчики канала <a href="${link}" target="_blank" rel="noopener">@${ch}</a>. Подпишись и вернись сюда.</p>
-      <div class="gate-act"><a class="btn primary" href="${link}" target="_blank" rel="noopener">Открыть @${ch}</a><button class="btn" type="button" id="gate-check">Я подписался — проверить</button></div>
+  // название — TG_TITLE (у приватной группы username нет), ссылка — приглашение TG_LINK или t.me/<username>
+  const ch=gEsc(cfg.title||'@'+cfg.channel),link=cfg.link||'https://t.me/'+encodeURIComponent(cfg.channel),brand='<div class="gate-brand"><svg class="brand-mark" viewBox="0 0 26 20" aria-hidden="true"><path d="M1 3H8V10H15M1 17H8V10"/><circle cx="20" cy="10" r="3.6"/></svg><span>DOTA FANTASY</span></div>';
+  if(me&&me.auth){el.innerHTML=`<div class="gate-card">${brand}<h1>Подпишись на канал</h1><p>Играть на сайте могут подписчики «<a href="${link}" target="_blank" rel="noopener">${ch}</a>». Подпишись и вернись сюда.</p>
+      <div class="gate-act"><a class="btn primary" href="${link}" target="_blank" rel="noopener">Открыть «${ch}»</a><button class="btn" type="button" id="gate-check">Я подписался — проверить</button></div>
       <p class="gate-msg" id="gate-msg" role="status"></p><button class="gate-out" type="button" id="gate-out">Войти другим аккаунтом</button></div>`;
     el.querySelector('#gate-check').onclick=()=>{el.querySelector('#gate-msg').textContent='Проверяем…';setTimeout(done,300)};
     el.querySelector('#gate-out').onclick=async()=>{await fetch('/api/logout',{method:'POST'});done()};return}
-  el.innerHTML=`<div class="gate-card">${brand}<h1>Вход через Telegram</h1><p>Фэнтези по тир-1 Dota 2 — для подписчиков канала <a href="${link}" target="_blank" rel="noopener">@${ch}</a>. Войди через Telegram: проверим подписку, а очки, составы и прогнозы сохранятся за тобой.</p>
+  el.innerHTML=`<div class="gate-card">${brand}<h1>Вход через Telegram</h1><p>Фэнтези по тир-1 Dota 2 — для подписчиков «<a href="${link}" target="_blank" rel="noopener">${ch}</a>». Войди через Telegram: проверим подписку, а очки, составы и прогнозы сохранятся за тобой.</p>
     <div class="gate-act" id="gate-tg"></div><p class="gate-msg" id="gate-msg" role="status"></p>
     <p class="gate-note">Мы не храним имя и username: только обезличенный номер игрока, чтобы сохранить прогресс.</p></div>`;
   window.dfTgAuth=async u=>{const m=el.querySelector('#gate-msg');m.textContent='Проверяем подписку…';
