@@ -24,6 +24,10 @@
     "LEGION": [{ "pos": 1, "nick": "Darklord^", "acc": 879017980 }, { "pos": 2, "nick": "Stojkov", "acc": 262476000 }, { "pos": 3, "nick": "SaberLight", "acc": 126212866 }, { "pos": 4, "nick": "xsvampire", "acc": 326327879 }, { "pos": 5, "nick": "Kidaro", "acc": 104334048 }]
   },
   "rosters_note": "Astra Invicta — по Liquipedia и матчу 9056907498 (OpenDota); Team Liquid — мид Malr1ne (по матчам PARI Universe с 22.10; против GamerLegion керри — rincyq заменой)",
+  "substitutions": [
+    { "team": "TL", "out": 152962063, "in": { "nick": "rincyq", "acc": 418942836 }, "from": "2026-10-23",
+      "source": "https://t.me/fissure_pro_dota2/8372", "note": "ЗАМЕНА В TEAM LIQUID (FISSURE, 22.10): rincyq вместо m1CKe" }
+  ],
   "stages": [
     { "idx": 0, "name": "Группы", "format": "round_robin", "from": "2026-10-22", "to": "2026-10-27", "groups": {"A": ["YDX", "1W", "OG", "TL", "GL"], "B": ["AST", "BB", "PARI", "TS", "LEGION"]},
       "note": "две группы по 5, круг в один оборот, все серии Bo3; в таблице — очко за каждую выигранную карту; 1–4 места — в плей-офф, 5-е выбывает; тай-брейки за выход и посев — 27 октября (две команды — Bo3, три и больше — Bo1 по кругу). группы и пары — Liquipedia (23.10.2026), пары 22.10 и первая 23.10 — по картам OpenDota; по 4 матча в день" },

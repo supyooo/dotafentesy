@@ -163,6 +163,10 @@ tr.dim td{opacity:.5}
 .badge.in{background:color-mix(in srgb,var(--win) 15%,transparent);color:var(--win)}
 .badge.out{background:color-mix(in srgb,var(--loss) 15%,transparent);color:var(--loss)}
 .badge.win{background:var(--gold);color:var(--gold-ink)}
+.badge.live{background:#C8281A;color:#fff;display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.badge.live::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff;animation:livePulse 1.2s ease-in-out infinite}
+@keyframes livePulse{50%{opacity:.2}}@media (prefers-reduced-motion:reduce){.badge.live::before{animation:none}}
+.ptags{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;vertical-align:middle}.mc-sub td{color:var(--muted)}.mc-sub .num.w{text-decoration:line-through}
 
 .grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:920px){.grid2{grid-template-columns:1fr}}
@@ -989,7 +993,7 @@ function liveStage(k){const st=RP().stages[k],agg={},log=[],ser=[],byAcc=new Map
   st.series.forEach(x=>{const a=tixOf(x.a),b=tixOf(x.b);if(x.status==='scheduled'||a<0||b<0){log.push(null);return}
     const maps=x.maps.map(m=>{const side=t=>m.players.map(([acc,s])=>[byAcc.get(String(acc)),s]).filter(([p])=>p&&p.team===t)
         .sort((u,v)=>ROLES.indexOf(u[0].role)-ROLES.indexOf(v[0].role)).map(([p,s])=>{const s2={...s,tow:0,rosh:0,fb:0,maps:1};add(p,s2);return[p.id,s2]});
-      const A=side(a),B=side(b);return{aw:m.winner===x.a,ms:A.concat(B),na:A.length,tier:m.tier}});
+      const A=side(a),B=side(b);return{aw:m.winner===x.a,ms:A.concat(B),na:A.length,tier:m.tier,subs:m.subs||[]}});
     const pts={};for(const acc in x.pts){const p=byAcc.get(acc);if(p)pts[p.id]=x.pts[acc]}
     ser.push({start:Date.parse(x.start),pts});
     log.push({round:x.group?'Группа '+x.group:x.label,label:x.label,key:x.key,g:x.group,a,b,wa:x.wa,wb:x.wb,maps,live:x.status!=='finished',start:x.start})});
@@ -1134,11 +1138,26 @@ const ava=p=>`<span class="ava" style="--h:${HUE[p.team]}">${p.tba?SIL.replace('
 const tBadge=(tag,hue)=>`<span class="tlogo tb" style="--h:${hue};--l:${Math.max(2,[...String(tag)].length)}" aria-hidden="true">${esc(tag)}</span>`;
 function card(p,o){o=o||{};return`<article class="pcard ${o.cap?'is-cap':''} ${o.out?'is-out':''}" style="--h:${HUE[p.team]}">
   <div class="art">${photo(p)}<div class="art-top"><span class="rt">${curR(p)}${lastDR(p)?`<small>${dlt(lastDR(p))}</small>`:''}</span><span class="pos">POS ${RS[p.role]}</span></div><span class="ttag">${TEAMS[p.team].tag}</span>${o.cap?`<span class="capb">${o.capLabel||'C'}</span>`:''}</div>
-  <div class="pbody"><div class="nick">${p.nick}</div><div class="sub">${tn(p.team)}${o.out?' · <span class="outt">выбыли</span>':''}</div>
+  <div class="pbody"><div class="nick">${p.nick}${pTags(p)}</div><div class="sub">${tn(p.team)}${o.out?' · <span class="outt">выбыли</span>':''}</div>
   ${o.stats?`<div class="pstats">${o.stats}</div>`:''}${o.acts?`<div class="pacts">${o.acts}</div>`:''}</div></article>`}
 const emptyCard=(role,txt)=>`<div class="pcard empty"><span class="big">${RS[role]}</span><b>${RN[role]}</b><span style="font-size:13px">${txt}</span></div>`;
 // статус участия (инвайт/квалификация/подтверждены на Slam IX) — из предварительного списка Slam IX; у турнира на реальных данных не показываем
-const who=(p,extra,short)=>`<div class="who">${ava(p)}<div><div class="pn">${p.nick}${extra||''}</div><div class="pt">${tn(p.team)}${short||RP()?'':` · <span class="st-${TEAMS[p.team].status}">${STATUS[TEAMS[p.team].status]}</span>`}</div></div></div>`;
+// плашки игрока на живых данных: «в игре» — его карта идёт сейчас (live_now выгрузки, не старше 12 минут); «не играл» —
+// в последней стадии команда играла без него (стендин: 0 очков, 02 §5); «объявлена замена» — из регламента, до выхода стендина
+function liveSet(){const R=LIVEV()?RP():null;if(!R||!(R.live_now||[]).length||Date.now()-Date.parse(R.generated)>12*60000)return null;
+  if(liveSet.g!==R.generated){liveSet.g=R.generated;liveSet.s=new Set(R.live_now.flatMap(g=>g.players.map(String)))}return liveSet.s}
+const isLive=p=>{const s=liveSet();return!!(s&&p.acc!=null&&s.has(String(p.acc)))};
+// идущая карта серии (по тегам команд): «в эфире · карта N · счёт по убийствам · минута»
+function liveGameFor(ta,tb){if(!liveSet())return null;return RP().live_now.find(g=>(g.a===ta&&g.b===tb)||(g.a===tb&&g.b===ta))||null}
+function liveGameTxt(g,ta,done){if(!g)return'';const sw=g.a===ta?g.score:[g.score[1],g.score[0]];
+  return`<span class="badge live">в эфире · карта ${(done||0)+1} · ${sw[0]}:${sw[1]} · ${Math.floor(g.duration_s/60)}'</span>`}
+function missOf(p){if(!LIVEV()||!RES.length)return null;const x=rpOf(p),st=x&&x.stages[RES.length-1];return st&&st.missed?st:null}
+const subOf=p=>LIVEV()&&p.acc!=null?(RP().substitutions||[]).find(x=>String(x.out)===String(p.acc))||null:null;
+function pTags(p){let h=isLive(p)?'<span class="badge live">в игре</span>':'';const m=missOf(p),s=subOf(p);
+  if(m)h+=`<span class="badge out" title="Стендин: за карты без игрока — 0 очков">${m.maps?'пропустил '+m.missed+' из '+(m.maps+m.missed)+' карт':'не играл'}${m.sub_by&&m.sub_by.length?' · замена '+esc(m.sub_by.join(', ')):''}</span>`;
+  else if(s)h+=`<span class="badge out" title="${esc(s.note||'')}">объявлена замена: ${esc(s.in.nick)}</span>`;
+  return h?`<span class="ptags">${h}</span>`:''}
+const who=(p,extra,short)=>`<div class="who">${ava(p)}<div><div class="pn">${p.nick}${extra||''}${pTags(p)}</div><div class="pt">${tn(p.team)}${short||RP()?'':` · <span class="st-${TEAMS[p.team].status}">${STATUS[TEAMS[p.team].status]}</span>`}</div></div></div>`;
 
 // настоящие даты стадий — у турниров, где они объявлены (stage_dates в tournaments.json); у демо — «стадия N»
 function renderTimeline(){const own=TOUR==='blast'||!!T().stage_dates;$('timeline').style.setProperty('--ns',STAGES.length);$('timeline').innerHTML=STAGES.map((s0,i)=>{const s=own?s0:{...s0,date:'стадия '+(i+1)};const cls=i<S.played?'done':i===S.played?'next':'';
@@ -1310,7 +1329,10 @@ function mcMapTable(m,mine,capId,k){const head=`<tr><th>Игрок</th><th class
   const row=([id,s])=>{const p=P[id],my=mine.has(id),pt=s.pt!=null?s.pt:r1(raw(s)*COEF[p.role]);
     return`<tr class="${my?'mc-my':''}"><td><b>${esc(p.nick)}</b>${my?`<span class="pf-cap" style="background:${id===capId?'var(--accent)':'var(--ink)'};color:${id===capId?'var(--accent-ink)':'var(--bg)'}">${id===capId?'мой · К':'мой'}</span>`:''} <span class="muted" style="font-size:12px">${RS[p.role]} · ${esc(TEAMS[p.team].tag)}</span></td><td class="r num">${s.k}/${s.d}/${s.a}</td><td class="r num">${s.lh}</td><td class="r num">${Math.round(s.gpm)}</td><td class="r num">${Math.round(s.stun)}</td><td class="r num">${s.obs}</td><td class="r num w">${fmt(pt)}</td></tr>`};
   const na=m.na??5,A=m.ms.slice(0,na),B=m.ms.slice(na);
-  return`<div class="tbox mc-tbl"><table><thead>${head}</thead><tbody>${A.map(row).join('')}<tr class="mc-sep"><td colspan="7"></td></tr>${B.map(row).join('')}</tbody></table></div>`}
+  // стендины (не в пуле): статистика есть, очки никому не идут (02 §5)
+  const subs=(m.subs||[]).map(([,s])=>{const rp=s.replaced!=null?P.find(x=>String(x.acc)===String(s.replaced)):null;
+    return`<tr class="mc-sub"><td><b>${esc(s.nick)}</b> <span class="badge out">замена</span> <span class="muted" style="font-size:12px">${esc(s.team)}${rp?' · вместо '+esc(rp.nick):''}</span></td><td class="r num">${s.k}/${s.d}/${s.a}</td><td class="r num">${s.lh}</td><td class="r num">${Math.round(s.gpm)}</td><td class="r num">${Math.round(s.stun)}</td><td class="r num">${s.obs}</td><td class="r num w" title="Очки стендина не идут никому">${fmt(s.pt)}</td></tr>`}).join('');
+  return`<div class="tbox mc-tbl"><table><thead>${head}</thead><tbody>${A.map(row).join('')}<tr class="mc-sep"><td colspan="7"></td></tr>${B.map(row).join('')}${subs?`<tr class="mc-sep"><td colspan="7"></td></tr>${subs}`:''}</tbody></table></div>`}
 function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S.played,NS()-1):MC.stage;MC.stage=sel;
   const s=STREAMS[TOUR];
   const strm=`<div class="mc-streams"><span class="pf-lab">Трансляции</span>${s?s.map(([t,u])=>`<a class="btn" href="${u}" target="_blank" rel="noopener">${t} ↗</a>`).join(''):'<span class="muted">появятся после анонса организатора</span>'}</div>`;
@@ -1319,10 +1341,10 @@ function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S
   // идущая стадия на живых данных: сыгранные и идущие серии с картами, дальше — расписание
   if(LIVEV()&&RES[sel]&&RES[sel].live){const R=RES[sel],st=RP().stages[sel],sn=S.snaps[sel],lu=(sn||S).lineup,mine=new Set(ROLES.map(k=>lu[k]).filter(x=>x!=null)),myTeams=new Set([...mine].map(id=>P[id].team));let lr='';
     body=st.series.map((x,i)=>{const lg=R.log[i],rd=x.group?'Группа '+x.group:x.label,h=rd!==lr?`<div class="mc-round">${esc(rd)}</div>`:'';lr=rd;
-      if(!lg){const a=tixOf(x.a),b=tixOf(x.b);
-        return h+`<div class="mc-ser mc-up"><div class="mc-sum"><span class="mc-round" style="margin:0">${x.at?esc(hhmm(x.at)):''}</span><span class="mc-t ${myTeams.has(a)?'w':''}">${a>=0?esc(tn(a)):'определится'}</span><span class="mc-sc">vs</span><span class="mc-t r ${myTeams.has(b)?'w':''}">${b>=0?esc(tn(b)):'определится'}</span><span class="mc-meta">${mcStreamLink(i,0)}</span></div></div>`}
+      if(!lg){const a=tixOf(x.a),b=tixOf(x.b),g=liveGameFor(x.a,x.b);
+        return h+`<div class="mc-ser mc-up"><div class="mc-sum"><span class="mc-round" style="margin:0">${g?liveGameTxt(g,x.a,0):x.at?esc(hhmm(x.at)):''}</span><span class="mc-t ${myTeams.has(a)?'w':''}">${a>=0?esc(tn(a)):'определится'}</span><span class="mc-sc">vs</span><span class="mc-t r ${myTeams.has(b)?'w':''}">${b>=0?esc(tn(b)):'определится'}</span><span class="mc-meta">${mcStreamLink(i,0)}</span></div></div>`}
       const mineN=lg.maps.length?lg.maps[0].ms.filter(([id])=>mine.has(id)).length:0;
-      return h+`<details class="mc-ser"><summary><span class="mc-t ${!lg.live&&lg.wa>lg.wb?'w':''}">${esc(tn(lg.a))}</span><span class="mc-sc">${lg.wa}:${lg.wb}</span><span class="mc-t r ${!lg.live&&lg.wb>lg.wa?'w':''}">${esc(tn(lg.b))}</span><span class="mc-meta">${lg.live?'<span class="badge win">идёт</span>':''}${mineN?`<span class="pf-lab" style="color:var(--accent)">твоих: ${mineN}</span>`:''}${mcStreamLink(i,!lg.live)}<span class="mc-open">Карты ▾</span></span></summary>
+      return h+`<details class="mc-ser"><summary><span class="mc-t ${!lg.live&&lg.wa>lg.wb?'w':''}">${esc(tn(lg.a))}</span><span class="mc-sc">${lg.wa}:${lg.wb}</span><span class="mc-t r ${!lg.live&&lg.wb>lg.wa?'w':''}">${esc(tn(lg.b))}</span><span class="mc-meta">${lg.live?(liveGameFor(x.a,x.b)?liveGameTxt(liveGameFor(x.a,x.b),x.a===TEAMS[lg.a].tag?x.a:x.b,lg.wa+lg.wb):'<span class="badge win">идёт</span>'):''}${mineN?`<span class="pf-lab" style="color:var(--accent)">твоих: ${mineN}</span>`:''}${mcStreamLink(i,!lg.live)}<span class="mc-open">Карты ▾</span></span></summary>
         ${lg.maps.map((m,j)=>`<div class="mc-map"><div class="pf-lab">Карта ${j+1} · победа ${esc(tn(m.aw?lg.a:lg.b))}${m.tier!=='parsed'?' · очки предварительные: ждём разбор реплея':''}</div>${mcMapTable(m,mine,sn?sn.captain:S.captain,sel)}</div>`).join('')}</details>`}).join('')
       +`<p class="note">Карта появляется через несколько минут после конца (OpenDota); идущую карту видно только после завершения. ${(S.lockAt||{})[sel]?'Твои очки — за серии, начавшиеся после фиксации состава ('+esc(hhmm(S.lockAt[sel]))+').':'Состав на эту стадию не зафиксирован — твоих очков пока нет.'}</p>`;
   }else if(sel<S.played){const R=RES[sel],sn=S.snaps[sel],mine=new Set(ROLES.map(k=>sn.lineup[k]).filter(x=>x!=null));let lr='';
@@ -1398,7 +1420,7 @@ function renderGlobal(){const el=$('panel-global'),W=world(),n=NBOTS+1;
 function renderRulesReal(R){const sc=R.scoring,w=sc.weights,L=[['Убийство',w.kill],['Помощь',w.assist],['Смерть',w.death],['Добивание',w.last_hit],
     ['Урон по строениям, за 1000',w.building_damage_per_1000],['Секунда оглушения',w.stun_s],['Observer Ward поставлен',w.obs_placed],['Observer Ward врага снят',w.obs_killed],['Стак крипов',w.camp_stacked],['Победа на карте',w.win]];
   $('panel-rules').innerHTML=`<div class="grid2"><div class="card"><h3>Очки за карту</h3><div class="tbox" style="border:0"><table><tbody>${L.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]>0?'+':''}${r[1]}</td></tr>`).join('')}</tbody></table></div>
-  <p class="note">Очки игрока за серию — среднее за её карты плюс ${sc.series_win_bonus} за победу в серии (как у BLAST). Очки стадии — сумма по сериям. Длительность карты не учитывается.</p></div>
+  <p class="note">Очки игрока за серию — среднее за её карты плюс ${sc.series_win_bonus} за победу в серии (как у BLAST). Очки стадии — сумма по сериям. Длительность карты не учитывается. Стендин: игрок, не вышедший на карту, получает за неё 0; очки замены не идут никому.</p></div>
   <div class="card"><h3>Коэффициент позиции</h3><div class="tbox" style="border:0"><table><tbody>${ROLES.map((k,i)=>`<tr><td><span class="rp">${RS[k]}</span> ${RN[k]}</td><td class="r num">×${Number(sc.role_multipliers[i+1]).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
   <p class="note">Средний игрок любой позиции набирает около 10 очков за карту. Веса статистик по позициям ещё калибруются.</p></div></div>
   <div class="card"><h3>Рейтинг и цена</h3><ul class="plain">
@@ -1512,7 +1534,7 @@ function renderOverview(){
   $('dash').innerHTML=`
   <div class="dcard next"><div class="dh"><h3>Что сделать сейчас</h3></div><div class="big" style="font-size:22px">${nextT}</div><div class="muted">${nextP}</div><div><a class="btn primary" href="#p-${nextGo}">${nextL}</a></div></div>
   <div class="dcard"><div class="dh"><h3>Мой состав</h3><a class="muted" href="#p-team">Открыть →</a></div><div class="big">${fmt(myTotal())} <span class="muted" style="font-size:14px">очков</span></div>
-    <div class="minis">${lu.map(p=>ava(p)).join('')}</div>
+    <div class="minis">${lu.map(p=>ava(p)).join('')}</div>${(()=>{const on=lu.filter(isLive);return on.length?`<div class="row"><span class="badge live">в игре</span><span>${on.map(p=>esc(p.nick)).join(', ')}</span></div>`:''})()}
     <div class="row"><span>Капитан <b>${S.captain!=null?P[S.captain].nick:'—'}</b></span><span>Банк <b>${fmt(S.cash)}</b></span>${last!=null?`<span>${lastL} <b>${fmt(last)}</b></span>`:''}</div></div>
   <div class="dcard"><div class="dh"><h3>Матчи</h3><a class="muted" href="#p-matches">Открыть →</a></div><div class="big" style="font-size:22px">${S.played>=NS()?"Турнир завершён":STAGES[S.played].name}</div><div class="row"><span>${S.played>=NS()?"Все серии и статистика по картам":lv&&cur?'Идёт · сыграно серий: '+cur.log.filter(x=>x&&!x.live).length+' из '+cur.log.length:STAGES[S.played].date+" · "+STAGES[S.played].meta}</span></div></div>
   <div class="dcard"><div class="dh"><h3>Рейтинг турнира</h3><a class="muted" href="#p-global">Открыть →</a></div>${rk?`<div class="big">${rk.rank.toLocaleString('ru')} <span class="muted" style="font-size:14px">из ${rk.n.toLocaleString('ru')}</span></div><div class="row"><span>Топ <b>${Math.max(.1,Math.round(rk.rank/rk.n*1000)/10)}%</b></span></div>`:`<div class="muted">Место появится после группового этапа. Сейчас в рейтинге ${ (NBOTS+1).toLocaleString('ru')} участников.</div>`}</div>

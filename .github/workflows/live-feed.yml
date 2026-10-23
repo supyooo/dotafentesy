@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 355
     env:
+      # «кто играет сейчас» — Steam GetLiveLeagueGames (тот же секрет, что у live-poll); без него — OpenDota /live
+      STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
       TOURNAMENT: pari-universe-1
       DURATION: "20700"
       EVERY: "180"
