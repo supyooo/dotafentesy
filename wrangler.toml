@@ -10,8 +10,8 @@ compatibility_date = "2026-10-01"
 # канал или группа, подписка на которые открывает игру: username без @ (публичные) или числовой id -100… (приватные);
 # TG_LINK — ссылка для кнопки «Подписаться» (у приватной — приглашение t.me/+…), TG_TITLE — название для экрана входа;
 # TG_BOT — username бота для виджета входа (у бота — /setdomain dota-fantasy.pages.dev, бот — администратор канала)
-TG_CHANNEL = ""
-TG_LINK = ""
+TG_CHANNEL = "-1004421337640"
+TG_LINK = "https://t.me/+8j69D4AiXSU3N2M6"
 TG_TITLE = "Медийка киберспорт"
 TG_BOT = "Fantasy_Dota2_bot"
 
