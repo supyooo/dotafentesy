@@ -1,7 +1,7 @@
 """Проверка целостности prototype/data/*.json — запускать после любой правки данных (руками или скриптом).
 
 python scripts/validate_data.py
-Код выхода 1, если есть ошибки; предупреждения (нет account_id, нет фото) выхода не ломают.
+Код выхода 1, если есть ошибки; предупреждения (нет account_id) выхода не ломают.
 """
 import json
 import sys
@@ -42,21 +42,17 @@ unique(teams, "id", "teams.json")
 unique(players, "id", "players.json")
 unique([p for p in players if p.get("account_id")], "account_id", "players.json")
 team_ids = {t["id"] for t in teams}
+# в main нет логотипов команд и фото игроков (своя графика: значки и монограммы); они — только в ветке official-kits
 for t in teams:
-    if t.get("logo") and not (PROTO / t["logo"]).is_file():
-        errors.append(f"teams.json: {t['name']} — файл логотипа не найден: {t['logo']}")
-    elif not t.get("logo"):
-        warnings.append(f"teams.json: {t['name']} — нет логотипа")
+    if t.get("logo"):
+        errors.append(f"teams.json: {t['name']} — поле logo в main не используется (логотипы — в ветке official-kits)")
 player_ids = {p["id"] for p in players}
 
 for p in players:
     if not p.get("account_id"):
         warnings.append(f"players.json: {p['nick']} — нет account_id")
-    photo = p.get("photo")
-    if not photo:
-        warnings.append(f"players.json: {p['nick']} — нет фото")
-    elif not (PROTO / photo).is_file():
-        errors.append(f"players.json: {p['nick']} — файл фото не найден: {photo}")
+    if p.get("photo"):
+        errors.append(f"players.json: {p['nick']} — поле photo в main не используется (фото — в ветке official-kits)")
 
 roster_ids = set()
 for r in rosters:

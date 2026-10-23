@@ -4,128 +4,112 @@
     "name": "Team Spirit",
     "tag": "TS",
     "hue": 40,
-    "steam_team_id": 7119388,
-    "logo": "teams/ts.webp"
+    "steam_team_id": 7119388
   },
   {
     "id": "pari",
     "name": "PARIVISION",
     "tag": "PARI",
     "hue": 172,
-    "steam_team_id": 9824702,
-    "logo": "teams/pari.webp"
+    "steam_team_id": 9824702
   },
   {
     "id": "xg",
     "name": "Xtreme Gaming",
     "tag": "XG",
     "hue": 38,
-    "steam_team_id": 8261500,
-    "logo": "teams/xg.webp"
+    "steam_team_id": 8261500
   },
   {
     "id": "bb",
     "name": "BetBoom Team",
     "tag": "BB",
     "hue": 356,
-    "steam_team_id": 8255888,
-    "logo": "teams/bb.webp"
+    "steam_team_id": 8255888
   },
   {
     "id": "ydx",
     "name": "Team Yandex",
     "tag": "YDX",
     "hue": 6,
-    "steam_team_id": 9823272,
-    "logo": "teams/ydx.webp"
+    "steam_team_id": 9823272
   },
   {
     "id": "aur",
     "name": "Aurora Gaming",
     "tag": "AUR",
     "hue": 178,
-    "steam_team_id": 9467224,
-    "logo": "teams/aur.webp"
+    "steam_team_id": 9467224
   },
   {
     "id": "tl",
     "name": "Team Liquid",
     "tag": "TL",
     "hue": 222,
-    "steam_team_id": 2163,
-    "logo": "teams/tl.webp"
+    "steam_team_id": 2163
   },
   {
     "id": "1w",
     "name": "1w Team",
     "tag": "1W",
     "hue": 342,
-    "steam_team_id": 10182357,
-    "logo": "teams/1w.webp"
+    "steam_team_id": 10182357
   },
   {
     "id": "navi",
     "name": "Natus Vincere",
     "tag": "NAVI",
     "hue": 50,
-    "steam_team_id": 36,
-    "logo": "teams/navi.webp"
+    "steam_team_id": 36
   },
   {
     "id": "mouz",
     "name": "MOUZ",
     "tag": "MOUZ",
     "hue": 355,
-    "steam_team_id": 9338413,
-    "logo": "teams/mouz.webp"
+    "steam_team_id": 9338413
   },
   {
     "id": "og",
     "name": "OG",
     "tag": "OG",
     "hue": 150,
-    "steam_team_id": 2586976,
-    "logo": "teams/og.webp"
+    "steam_team_id": 2586976
   },
   {
     "id": "lgd",
     "name": "LGD Gaming",
     "tag": "LGD",
     "hue": 40,
-    "steam_team_id": 15,
-    "logo": "teams/lgd.webp"
+    "steam_team_id": 15
   },
   {
     "id": "gl",
     "name": "GamerLegion",
     "tag": "GL",
     "hue": 205,
-    "steam_team_id": 9964962,
-    "logo": "teams/gl.webp"
+    "steam_team_id": 9964962
   },
   {
     "id": "lvl",
     "name": "Level UP",
     "tag": "LVL",
     "hue": 280,
-    "steam_team_id": 9256405,
-    "logo": "teams/lvl.webp"
+    "steam_team_id": 9256405
   },
   {
     "id": "yb",
     "name": "Yakult Brothers",
     "tag": "YB",
     "hue": 350,
-    "steam_team_id": 9351740,
-    "logo": "teams/yb.webp"
+    "steam_team_id": 9351740
   },
   {
     "id": "nms",
     "name": "Team Nemesis",
     "tag": "NMS",
     "hue": 240,
-    "steam_team_id": 9691969,
-    "logo": "teams/nms.webp"
+    "steam_team_id": 9691969
   },
   {
     "id": "ast",
@@ -138,23 +122,20 @@
     "name": "LEGION",
     "tag": "LEGION",
     "hue": 12,
-    "steam_team_id": 10291652,
-    "logo": "teams/legion.webp"
+    "steam_team_id": 10291652
   },
   {
     "id": "ttb",
     "name": "Team Tidebound",
     "tag": "TTB",
     "hue": 192,
-    "steam_team_id": 9640842,
-    "logo": "teams/ttb.webp"
+    "steam_team_id": 9640842
   },
   {
     "id": "pips",
     "name": "Pipsqueak+4",
     "tag": "PIPS",
     "hue": 96,
-    "steam_team_id": 10150633,
-    "logo": "teams/pips.webp"
+    "steam_team_id": 10150633
   }
 ]

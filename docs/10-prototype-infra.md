@@ -18,8 +18,8 @@
   На главной (с 15.10.2026): «Скоро» — PARI Universe (текущий раунд сезона, калибровка), DreamLeague S30, EWC; «Прошли» — турниры
   с `past: true` и выгрузкой replay, сейчас BLAST Slam VIII: экран итогов (чемпион, группы, сетка, кого брали, лучшие игроки, твой состав —
   docs/05). TI 2026 скрыт до разметки плей-офф. Пример сезона в кабинете убран — новый игрок начинает с нуля (docs/05).
-  У каждого турнира своё оформление (`data-t`/`data-skin`), фирменная шапка (`renderHero`), заставка (`playIntro`)
-  и экран перехода между стадиями (`tiStage`/`blStage`/`ewStage`/`walStage`/`dlStage`/`paStage`).
+  В main у турниров единый стиль с акцентным цветом, общие шапка (`renderHero`), заставка (`playIntro`) и переход стадии (`stageFx`) —
+  см. «Чистая версия» ниже. В ветке official-kits — своё оформление каждого турнира и экраны перехода `tiStage`/`blStage`/… .
 - **Стартовая заставка «Сетка»** — `prototype/intro/df-intro.{js,css}` (`DFIntro.play('bracket')`), раз за сессию (`df-splash`).
   Наши правки в df-intro: страховка удаления оверлея по таймеру (в скрытой вкладке onfinish не наступает); `dfi-wait` — пока грузится
   шрифт, виден только фон (без «фото» готового кадра); на телефоне сетка повёрнута на 90°, «DOTA / FANTASY» в две строки.
@@ -31,7 +31,7 @@
   капитана, «Тройного капитана», отмену/Ctrl+Z и «Вернуть состав окна»; на рынке у кнопок title с причиной. Снимается в `play()`
   после сыгранной стадии (новое окно). Хранится в состоянии турнира (`df-fantasy-v7-<tour>`). В спеке (docs/02) такого шага нет —
   решение автора 02.10.2026; для бэкенда: флаг на lineup текущего окна.
-- **Логотипы команд** — `prototype/teams/<id>.webp` (поле `logo` в teams.json), из Steam: команды сами загружают их в Dota 2,
+- **Логотипы команд** (только ветка official-kits; в main — значки `tBadge`) — `prototype/teams/<id>.webp` (поле `logo` в teams.json), из Steam: команды сами загружают их в Dota 2,
   берём через OpenDota `/teams/{steam_team_id}` → `logo_url` (cdn.steamusercontent.com). `steam_team_id` проверены по составам
   в матчах Slam VIII. Обновление: `python scripts/fetch_team_logos.py [--skip id,id] [--only id,id]` (нужен Pillow).
   У Astra Invicta логотипа нет (команды ещё нет ни в Steam-матчах, ни на Liquipedia). Показываются в прогнозах
@@ -63,7 +63,23 @@
   и места отборочных (`slots` в составе), формат, пустая сетка. Так сейчас DreamLeague Season 30.
 - Блок «Участники, формат, сетка» на обзоре (`renderTourInfo`) — у турниров с `participants: true`.
 
-## Оформления турниров — источники и правила
+## Чистая версия (main) и ветка с китами (official-kits) — с 23.10.2026
+Решение автора 23.10.2026 (сменилась стратегия продвижения): в main и на основном адресе — никакой чужой графики.
+- Фото игроков → **монограмма** (`monoTxt`: две буквы ника, у ника из нескольких слов — первые буквы слов) на плашке цвета команды;
+  в большой карточке (`.art .mono`) и в аватарке (`.ava .mono`). У неизвестного игрока («не объявлен») — силуэт `SIL`.
+- Логотипы команд → **значок** `tBadge(tag, hue)`: тег на плашке цвета команды, размер шрифта подстраивается под длину тега (`--l`).
+- Киты организаторов → **единый стиль сайта** (светлая «бумага», Saira); у турнира только акцентный цвет (`:root[data-t]`/`[data-skin]`,
+  контраст текста и кнопок ≥ 4.5:1): PARI #0A7471, BLAST #2D4BD8, DreamLeague #C2124D, Wallachia #3F7A17, TI #9A6200, EWC #C2410C.
+  В шапке и карточке турнира — своя схема сетки `ART()` (линии сходятся к точке чемпиона, как в логотипе сайта); название турнира — текстом
+  (`sup`/`main`/`em` из tournaments.json). Заставка турнира — общая (`playIntro`: полосы и линия цвета турнира), переход стадии — `stageFx`.
+- Внизу страницы и в меню — дисклеймер: неофициальный фан-проект, не связан с Valve, организаторами и командами; Dota 2 — товарный знак Valve.
+- Папки `prototype/photos`, `prototype/teams`, `prototype/brand` и поля `photo`/`logo` в данных из main удалены; `validate_data.py`
+  считает их ошибкой. Скрипты `fetch_team_logos.py` и `slam_photos.py` остались — для ветки official-kits.
+- **official-kits** — снимок main на 23.10.2026 (коммит 259b53a6: киты, 81 фото, логотипы команд). Деплой из этой ветки:
+  `npx wrangler pages deploy prototype --project-name dota-fantasy --branch kits` → https://kits.dota-fantasy.pages.dev (тоже noindex).
+  Всё, что ниже про `brand/`, фото и логотипы, относится к этой ветке.
+
+## Оформления турниров — источники и правила (ветка official-kits)
 Решение автора 29.09.2026: прототип — питч для операторов, оформления по их официальным материалам. Каждая шапка помечена
 «Концепт для … · неофициально». Источники — только официальные (киты, бренд-порталы, сайты турниров), не фан-архивы и не портфолио.
 - `brand/blast/` — медиакит BLAST (mediakit.blast.tv): кристалл-логотип, узор, KV.
@@ -90,7 +106,8 @@
 
 ## Хостинг
 - **https://dota-fantasy.pages.dev** — Cloudflare Pages, аккаунт автора (wrangler залогинен на его компьютере).
-  Деплой: `npx wrangler pages deploy prototype --project-name dota-fantasy --branch main` (выкладывается только `prototype/`).
+  Деплой: `npx wrangler pages deploy prototype --project-name dota-fantasy --branch main` (выкладывается только `prototype/`) — из ветки main.
+  Версия с китами — из ветки official-kits с `--branch kits` → https://kits.dota-fantasy.pages.dev.
   `prototype/_headers`: `X-Robots-Tag: noindex` (не снимать), `/data/*` без кэша. Несуществующие пути отдают index.html (200) — не утечка.
   Документ «Как считаются рейтинг, цены и очки» — `prototype/formuly.html` → https://dota-fantasy.pages.dev/formuly (чтобы делиться ссылкой).
 - Яндекс Браузер и системный DNS провайдера не открывают `*.pages.dev` (блокировка на уровне DNS); Chrome/Edge открывают (secure DNS).
@@ -101,7 +118,7 @@
 ## Скрипты (Python, стандартная библиотека)
 - `scripts/fill_account_ids.py [--league ID] [--write]` — account_id игроков по OpenDota `/proPlayers` и реальным составам в матчах лиги;
   пишет только совпадения «ник/alias + команда», показывает расхождения составов.
-- `scripts/validate_data.py` — целостность `prototype/data/*.json` (ошибки → код 1; нет account_id/фото — предупреждения).
+- `scripts/validate_data.py` — целостность `prototype/data/*.json` (ошибки → код 1, в т.ч. поля photo/logo в main; нет account_id — предупреждение).
 - `scripts/serve.py` — локальный сервер (см. выше).
 
 ## Данные игроков — состояние на 30.09.2026
@@ -109,4 +126,5 @@
   OG (Topson, SSS, OneJey): их команды ещё не играли на Slam VIII — `python scripts/fill_account_ids.py --league 19102 --write` по мере матчей.
 - Сверка по матчам Slam VIII (позиции по нетворсу/линиям): GamerLegion — **Yuma (177203952) заменил Timado** на керри (Timado в players.json
   вне составов; у Yuma нет фото). Сменили ник без смены состава (`aliases`): Ainkrad → «darkniA», JaCkky → «JACKBOYS», Jabz → «J», miCKe → «m1CKe».
-- Фото: нет у mrls (MOUZ) и Yuma.
+- Фото (ветка official-kits): нет у mrls (MOUZ). 23.10 — новые фото Spirit, swedenstrong, Yuma и Malr1ne (прислал автор).
+- 23.10: мид Team Liquid на PARI Universe — **Malr1ne (898455820)**, по матчам турнира; в одном матче против GamerLegion керри — rincyq (замена).
