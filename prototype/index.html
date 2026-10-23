@@ -1018,13 +1018,32 @@ function liveCtx(){const R=RP(),C={},node=key=>R.stages.flatMap(s=>s.series).fin
   return C}
 // прогресс игрока в живом режиме: сыграно — завершённые стадии. Снимок состава на стадию делается при фиксации
 // (S.lockAt[k] — время фиксации); не зафиксировал до конца стадии — пустой состав, 0 очков
-function liveSync(done){S.lockAt=S.lockAt||{};S.pkLock=S.pkLock||{};
+function liveSync(done){S.lockAt=S.lockAt||{};S.pkLock=S.pkLock||{};if(typeof SWAP!=='undefined'&&S.played!==done)SWAP=null;
   for(let k=0;k<done;k++)if(!S.snaps[k])S.snaps[k]={lineup:Object.fromEntries(ROLES.map(r=>[r,null])),captain:null,tc:false,penalty:0,transfers:0,missed:true};
   if(S.played!==done){S.played=done;S.ws={lineup:{...S.lineup},captain:S.captain,cash:S.cash}}
   S.locked=!!S.snaps[done]}
-// очки игрока в моём составе за стадию: в живом режиме — только серии, начавшиеся после фиксации состава на эту стадию
-function myPts(k,id){const R=RES[k];if(!R)return 0;const t=(S.lockAt||{})[k];if(!R.ser||t==null)return R.pts[id]||0;
-  return r1(R.ser.reduce((s,x)=>s+(x.start>=t?(x.pts[id]||0):0),0))}
+// очки моего состава за стадию — по отрезкам владения: игрок приносит очки серий, начавшихся, пока он в составе
+// (в живом режиме — с фиксации; после замены стендина — прежний до замены, новый после). Без живых данных — очки стадии целиком
+function snapEntries(k){const sn=S.snaps[k];if(!sn)return[];if(sn.hist)return sn.hist;const t=(S.lockAt||{})[k];
+  return ROLES.filter(r=>sn.lineup[r]!=null).map(r=>({id:sn.lineup[r],role:r,from:t??null,to:null,cap:sn.lineup[r]===sn.captain}))}
+function ptsWin(k,id,from,to){const R=RES[k];if(!R)return 0;if(!R.ser)return R.pts[id]||0;
+  return r1(R.ser.reduce((s,x)=>s+((from==null||x.start>=from)&&(to==null||x.start<to)?(x.pts[id]||0):0),0))}
+function myPts(k,id){return r1(snapEntries(k).filter(e=>e.id===id).reduce((s,e)=>s+ptsWin(k,id,e.from,e.to),0))}
+// очки позиции в моём составе за стадию (с множителем капитана) и кто был на ней до замены
+function roleScore(k,role){const sn=S.snaps[k];if(!sn)return 0;return r1(snapEntries(k).filter(e=>e.role===role).reduce((s,e)=>s+ptsWin(k,e.id,e.from,e.to)*(e.cap?(sn.tc?3:2):1),0))}
+const swapNote=(k,role)=>snapEntries(k).filter(e=>e.role===role&&e.to!=null).map(e=>`<div class="muted" style="font-size:12px;margin-left:44px">до ${esc(hhmm(e.to))} — ${esc(P[e.id].nick)}</div>`).join('');
+// ---------- замена стендина (решение автора 23.10): игрока моего зафиксированного состава заменили на карту стадии (или замену
+// объявили) — его можно бесплатно поменять на игрока той же позиции, остальные четверо не меняются
+let SWAP=null; // {role,out} — выбор замены на рынке
+function swapReason(id){if(!LIVEV()||!S.locked||id==null)return null;const k=S.played,sn=S.snaps[k];if(!sn||(sn.swapped||[]).includes(id))return null;
+  const p=P[id],x=rpOf(p),st=RES[k]&&x&&x.stages[k],s=subOf(p);
+  return st&&st.missed?'пропустил '+st.missed+' '+plural(st.missed,'карту','карты','карт')+(st.sub_by&&st.sub_by.length?' · замена '+st.sub_by.join(', '):''):s?'объявлена замена: '+s.in.nick:null}
+function doSwap(newId){const k=S.played,sn=S.snaps[k],{role,out}=SWAP,now=Date.now(),p=P[newId];
+  if(!sn.hist)sn.hist=snapEntries(k).map(e=>({...e}));
+  const e=sn.hist.find(x=>x.id===out&&x.to==null),cap=e?e.cap:false;if(e)e.to=now;
+  sn.hist.push({id:newId,role,from:now,to:null,cap});sn.lineup[role]=newId;if(sn.captain===out)sn.captain=newId;sn.swapped=[...(sn.swapped||[]),out];
+  S.cash=r1(S.cash+curP(P[out])-curP(p));S.lineup[role]=newId;if(S.captain===out)S.captain=newId;
+  SWAP=null;WORLD=null;save();render();toast(`Замена: ${P[out].nick} → ${p.nick}. Очки ${p.nick} — с серий, начавшихся после ${hhmm(now)}`)}
 const hhmm=iso=>{try{return new Date(iso).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
 // Динамика после каждой стадии: рейтинг ±3 по очкам за карту (среднее по позиции = 10),
 // цена +0.5 за ≥12 оч./карту, −0.5 за ≤8, ещё −0.5 если команда вылетела на этой стадии.
@@ -1049,7 +1068,7 @@ const transfers=()=>{const b=windowBase();return b?ROLES.filter(k=>S.lineup[k]!=
 const penalty=()=>Math.max(0,transfers()-FREE_TR)*TR_COST;
 const spent=()=>ROLES.reduce((s,k)=>s+(S.lineup[k]!=null?curP(P[S.lineup[k]]):0),0); // стоимость состава по текущим ценам
 const totalPts=id=>RES.reduce((s,R)=>s+(R.pts[id]||0),0);
-function stageScore(k){const sn=S.snaps[k],R=RES[k];if(!sn||!R)return 0;let s=0;ROLES.forEach(role=>{const id=sn.lineup[role];if(id==null)return;s+=myPts(k,id)*(id===sn.captain?(sn.tc?3:2):1)});return r1(s-sn.penalty)}
+function stageScore(k){const sn=S.snaps[k],R=RES[k];if(!sn||!R)return 0;let s=0;snapEntries(k).forEach(e=>{s+=ptsWin(k,e.id,e.from,e.to)*(e.cap?(sn.tc?3:2):1)});return r1(s-sn.penalty)}
 const myTotal=()=>r1(S.snaps.reduce((s,_,k)=>s+stageScore(k),0));
 
 // ---------- lobby (draft league)
@@ -1106,10 +1125,14 @@ function lbTrade(theirId){const lb=L();if(!windowOpen()||!lbAlive(0))return;
 let lbFlash={t:'',ok:false};function lbMsg(t,ok){lbFlash={t,ok}}
 
 // ---------- salary cap actions
-function reason(p){if(p.tba)return'Игрок ещё не объявлен';if(S.played>=NS())return'Турнир завершён';if(S.locked)return'Состав зафиксирован до следующей стадии';if(!aliveNow().has(p.team))return'Команда выбыла';
+function reason(p){if(p.tba)return'Игрок ещё не объявлен';if(S.played>=NS())return'Турнир завершён';
+  if(SWAP&&S.locked){if(p.role!==SWAP.role)return'Сейчас — замена стендина на позицию «'+RN[SWAP.role]+'»';if(!aliveNow().has(p.team))return'Команда выбыла';
+    if(ROLES.filter(k=>k!==p.role&&S.lineup[k]!=null&&P[S.lineup[k]].team===p.team).length>=MAX_TEAM)return'Не больше 2 игроков одной команды';
+    return S.cash+curP(P[SWAP.out])-curP(p)<-1e-9?'Не хватает денег в банке':''}
+  if(S.locked)return'Состав зафиксирован до следующей стадии';if(!aliveNow().has(p.team))return'Команда выбыла';
   const cur=S.lineup[p.role];if(ROLES.filter(k=>k!==p.role&&S.lineup[k]!=null&&P[S.lineup[k]].team===p.team).length>=MAX_TEAM)return'Не больше 2 игроков одной команды';
   if(S.cash+(cur!=null?curP(P[cur]):0)-curP(p)<-1e-9)return'Не хватает денег в банке';return''}
-function pick(id){const p=P[id];if(reason(p))return;const cur=S.lineup[p.role];snapLu(cur!=null?`${P[cur].nick} → ${p.nick}`:`взят ${p.nick} за ${fmt(curP(p))}`);S.cash=r1(S.cash+(cur!=null?curP(P[cur]):0)-curP(p));S.lineup[p.role]=id;if(S.captain===cur)S.captain=null;flash='';save();render()}
+function pick(id){const p=P[id];if(reason(p))return;if(SWAP&&S.locked)return doSwap(id);const cur=S.lineup[p.role];snapLu(cur!=null?`${P[cur].nick} → ${p.nick}`:`взят ${p.nick} за ${fmt(curP(p))}`);S.cash=r1(S.cash+(cur!=null?curP(P[cur]):0)-curP(p));S.lineup[p.role]=id;if(S.captain===cur)S.captain=null;flash='';save();render()}
 function drop(role){const id=S.lineup[role];if(id==null||S.locked)return;snapLu(`убран ${P[id].nick}, +${fmt(curP(P[id]))} в банк`);S.cash=r1(S.cash+curP(P[id]));if(S.captain===id)S.captain=null;S.lineup[role]=null;save();render()}
 let flash='',flashGo='',confirmReset=false;
 function play(){if(S.played>=NS())return;
@@ -1196,10 +1219,11 @@ function renderLineup(){const alive=aliveNow(),last=S.played?RES[S.played-1]:nul
     const p=P[id],cap=S.captain===id,lp=last&&S.snaps[S.played-1].lineup[role]===id?myPts(S.played-1,id):null;
     return card(p,{cap,capLabel:S.tcArmed?'C×3':'C×2',out:!alive.has(p.team),
       stats:`<span>${fmt(curP(p))} ${dlt(lastDP(p),1)}</span><span>${fmt(totalPts(id))} оч.${lp!=null?' <span class="muted">+'+fmt(lp)+'</span>':''}</span>`,
-      acts:`<button data-cap="${id}" aria-pressed="${cap}" title="${S.locked?'Состав зафиксирован':'Капитан'}" ${S.locked?'disabled':''}>C</button><button data-find="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Заменить</button><button data-drop="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Убрать</button>`})}).join('');
+      acts:`<button data-cap="${id}" aria-pressed="${cap}" title="${S.locked?'Состав зафиксирован':'Капитан'}" ${S.locked?'disabled':''}>C</button>${swapReason(id)?`<button data-swap="${role}" class="go" title="${esc(swapReason(id))} — можно бесплатно заменить">Заменить · стендин</button>`:`<button data-find="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Заменить</button>`}<button data-drop="${role}" ${S.played>=NS()||S.locked?'disabled':''}>Убрать</button>`})}).join('');
   $('lineup').querySelectorAll('[data-cap]').forEach(b=>b.onclick=()=>{const id=+b.dataset.cap;if(S.locked||S.captain===id)return;snapLu('капитан '+P[id].nick);S.captain=id;save();render()});renderUndo();
   $('lineup').querySelectorAll('[data-drop]').forEach(b=>b.onclick=()=>drop(b.dataset.drop));
-  $('lineup').querySelectorAll('[data-find]').forEach(b=>b.onclick=()=>findRole(b.dataset.find))}
+  $('lineup').querySelectorAll('[data-find]').forEach(b=>b.onclick=()=>findRole(b.dataset.find));
+  $('lineup').querySelectorAll('[data-swap]').forEach(b=>b.onclick=()=>{const role=b.dataset.swap;SWAP={role,out:S.lineup[role]};findRole(role)})}
 // ---------- фиксация состава: до следующей стадии состав не меняется (снимается после сыгранной стадии)
 let confirmLock=false;
 const LOCK_IC='<svg class="ub-lock-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
@@ -1217,7 +1241,7 @@ function lockLineup(){if(S.locked||S.played>=NS()||lockBlocker())return;
 function renderLock(){const el=$('lock-bar');if(!el)return;if(S.played>=NS()){el.hidden=true;el.innerHTML='';return}
   const st=STAGES[S.played].name;el.hidden=false;
   const lv=LIVEV(),at=lv&&(S.lockAt||{})[S.played];
-  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован${at?' · '+hhmm(at):''}</span><b>${LOCK_IC}${lv?'На стадию «'+esc(st)+'» — до её конца не изменить':'До стадии «'+esc(st)+'» изменить нельзя'}</b><span class="muted" style="font-size:14px">${lv?'Очки идут за серии, начавшиеся после фиксации. Замены откроются, когда стадия закончится.':'Замены, капитан и «Тройной капитан» откроются после этой стадии.'}</span></div></div>`;return}
+  if(S.locked){el.innerHTML=`<div class="ub ub-locked"><div class="ub-t"><span class="pf-lab">Состав зафиксирован${at?' · '+hhmm(at):''}</span><b>${LOCK_IC}${lv?'На стадию «'+esc(st)+'» — до её конца не изменить':'До стадии «'+esc(st)+'» изменить нельзя'}</b><span class="muted" style="font-size:14px">${lv?'Очки идут за серии, начавшиеся после фиксации. Замены откроются, когда стадия закончится.':'Замены, капитан и «Тройной капитан» откроются после этой стадии.'}</span>${(()=>{const sw=ROLES.map(r=>S.lineup[r]).filter(id=>swapReason(id));return sw.length?`<span class="ub-warn">${sw.map(id=>esc(P[id].nick)+' — '+esc(swapReason(id))).join('; ')}. Его можно бесплатно заменить на игрока той же позиции: кнопка «Заменить · стендин» на карточке.</span>`:''})()}</div></div>`;return}
   const why=lockBlocker();
   // идущая стадия уже началась (тестовый прогон): засчитаются только серии, которые начнутся после фиксации
   const late=lv&&RES[S.played],hint=late?`Стадия «${esc(st)}» уже идёт: очки пойдут за серии, которые начнутся после фиксации. До конца стадии состав не изменить.`
@@ -1246,7 +1270,8 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&
   if(!v||v.hidden||/INPUT|TEXTAREA|SELECT/.test((e.target.tagName||'')))return;if(UNDO.length){e.preventDefault();undo()}}});
 function findRole(role){$('f-role').value=role;renderMarket();toMarket()}
 function toMarket(){const h=$('market-h');if(h)h.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}
-function renderMarket(){const role=$('f-role').value;{const h=$('mk-hint');if(h)h.textContent=role?'позиция: '+RN[role]+' · '+(S.lineup[role]!=null?'сейчас '+P[S.lineup[role]].nick:'пусто'):'все позиции'}const sort=$('f-sort').value,q=$('f-q').value.trim().toLowerCase(),alive=aliveNow(),mine=new Set(ROLES.map(k=>S.lineup[k]));
+function renderMarket(){if(SWAP&&!S.locked)SWAP=null;const role=$('f-role').value;{const h=$('mk-hint');if(h){if(SWAP){h.innerHTML=`замена стендина: вместо ${esc(P[SWAP.out].nick)} — бесплатно · <button class="chip" type="button" id="swap-x">Отмена</button>`;$('swap-x').onclick=()=>{SWAP=null;render()}}
+    else h.textContent=role?'позиция: '+RN[role]+' · '+(S.lineup[role]!=null?'сейчас '+P[S.lineup[role]].nick:'пусто'):'все позиции'}}const sort=$('f-sort').value,q=$('f-q').value.trim().toLowerCase(),alive=aliveNow(),mine=new Set(ROLES.map(k=>S.lineup[k]));
   const list=P.filter(p=>(!role||p.role===role)&&(!q||p.nick.toLowerCase().includes(q)||tn(p.team).toLowerCase().includes(q)||TEAMS[p.team].tag.toLowerCase().includes(q)));
   const key={rating:curR,price:curP,own:p=>ownPct(p.id),pts:p=>totalPts(p.id),team:p=>-p.team*10-ROLES.indexOf(p.role)/10}[sort];
   list.sort((a,b)=>(alive.has(b.team)-alive.has(a.team))||key(b)-key(a)||curR(b)-curR(a));
@@ -1357,7 +1382,7 @@ function renderPoints(){const el=$('panel-points'),sel=MC.stage==null?Math.min(S
   }else body=`<p class="muted">Пары станут известны после стадии «${STAGES[sel-1].name}».</p>`;
   let mine='';
   if(S.snaps.length){const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
-      const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'')}<div class="pt num" style="margin-left:44px">${fmt(myPts(k,id)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
+      const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'')}<div class="pt num" style="margin-left:44px">${fmt(roleScore(k,role))} оч.</div>${swapNote(k,role)}</td>`}).join('')+'</tr>').join('');
     const pen='<tr><td class="muted">Штраф</td>'+S.snaps.map(sn=>`<td class="num">${sn.penalty?'−'+sn.penalty:'—'}</td>`).join('')+'</tr>';
     const tot='<tr><td><b>Итого</b></td>'+S.snaps.map((_,k)=>`<td class="num w">${fmt(stageScore(k))}</td>`).join('')+'</tr>';
     mine=`<div class="sec-h"><h2>Мой состав по стадиям</h2></div><div class="tbox"><table><thead><tr><th>Поз.</th>${S.snaps.map((_,i)=>`<th>${STAGES[i].name}</th>`).join('')}</tr></thead><tbody>${rows}${pen}${tot}</tbody></table></div>`}
@@ -1578,7 +1603,7 @@ function pxOwn(){if(PX_OWN&&PX_OWN.t===TOUR)return PX_OWN.own;const r=mulberry32
   BOT_W=P.map(p=>Math.pow(Math.max(1,p.rating-68),1.7)); // веса по стартовому рейтингу, как в buildWorld
   for(let i=0;i<N;i++)botLineup(r).lu.forEach(id=>own[id]++);BOT_W=keep;PX_OWN={t:TOUR,own:own.map(v=>v/N)};return PX_OWN.own}function pxMine(){if(!S.played)return'<p class="muted" style="margin:0">Ты в этом турнире участия не принимал.</p>';
   const rows=ROLES.map(role=>`<tr><td><span class="rp">${RS[role]}</span></td>`+S.snaps.map((sn,k)=>{const id=sn.lineup[role];if(id==null)return'<td>—</td>';
-    const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'',1)}<div class="pt num" style="margin-left:44px">${fmt(myPts(k,id)*mul)} оч.</div></td>`}).join('')+'</tr>').join('');
+    const cap=id===sn.captain,mul=cap?(sn.tc?3:2):1;return`<td>${who(P[id],cap?` <span class="badge win">C×${mul}</span>`:'',1)}<div class="pt num" style="margin-left:44px">${fmt(roleScore(k,role))} оч.</div>${swapNote(k,role)}</td>`}).join('')+'</tr>').join('');
   const tot='<tr><td><b>Итого</b></td>'+S.snaps.map((_,k)=>`<td class="num w">${fmt(stageScore(k))}</td>`).join('')+'</tr>';
   return`<div class="pf-row" style="gap:24px;align-items:baseline"><span><b class="num" style="font-size:28px">${fmt(myTotal())}</b> <span class="muted">очков</span></span><span><b>${myRank().rank.toLocaleString('ru')}-е</b> <span class="muted">место из ${(NBOTS+1).toLocaleString('ru')}</span></span>${S.played<NS()?`<span class="muted">сыграно стадий: ${S.played} из ${NS()}</span>`:''}</div>
   <div class="tbox"><table><thead><tr><th>Поз.</th>${S.snaps.map((_,i)=>`<th>${esc(STAGES[i].name)}</th>`).join('')}</tr></thead><tbody>${rows}${tot}</tbody></table></div>`}
