@@ -150,6 +150,7 @@
       "roster": "pari-universe-1",
       "pool": "pool/pari-universe-1.json",
       "live": "live/pari-universe-1.json",
+      "rules": { "late_lock": "full_stage", "pick_close": "series" },
       "live_remote": "https://raw.githubusercontent.com/supyooo/dotafentesy/live-feed/pari-universe-1.json",
       "stage_dates": [
         "22–26 окт",

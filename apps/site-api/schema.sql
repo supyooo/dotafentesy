@@ -26,3 +26,25 @@ create table if not exists events (
 create index if not exists events_at on events (at);
 create index if not exists events_type_at on events (type, at);
 create index if not exists events_uid on events (uid, at);
+-- игра на сервере (с 24.10.2026, apps/site-api/src/game.ts): источник правды для таблицы и призов
+create table if not exists lineups (
+  uid text not null, tour text not null, stage integer not null,
+  lineup_lock text not null,     -- состав при фиксации {carry..hard: account_id}
+  lineup text not null,          -- текущий (после замен стендинов)
+  captain_lock integer, captain integer,
+  tc integer not null default 0, -- тройной капитан на эту стадию
+  penalty real not null default 0,  -- штраф за трансферы к прошлой стадии
+  locked_at integer not null, late integer not null default 0,  -- фиксация после старта стадии (тестовое правило)
+  primary key (uid, tour, stage)
+);
+create table if not exists lineup_changes (
+  id integer primary key autoincrement, uid text not null, tour text not null, stage integer not null,
+  role text not null, out_acc integer not null, in_acc integer not null, at integer not null
+);
+create index if not exists lineup_changes_u on lineup_changes (uid, tour, stage);
+create table if not exists predictions (
+  uid text not null, tour text not null, key text not null,   -- key — узел сетки регламента (G8, UBQF1 …)
+  w text not null, sc text, a text, b text, at integer not null,
+  primary key (uid, tour, key)
+);
+create table if not exists pred_locks (uid text not null, tour text not null, stage integer not null, at integer not null, primary key (uid, tour, stage));

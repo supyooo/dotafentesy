@@ -5,9 +5,10 @@
 // Настройка — docs/10 «Вход и сохранение»: секреты TELEGRAM_BOT_TOKEN и SESSION_SECRET, переменные TG_CHANNEL и TG_BOT
 // (wrangler.toml), база D1 «DB» (схема — apps/site-api/schema.sql). Пока что-то не настроено — /api/config отдаёт enabled: false,
 // и сайт работает без входа (как раньше).
+import { GameError, leaderboard, loadFeed, lock, me, pickLock, picks, swap, tourCfg } from "../../apps/site-api/src/game";
 interface D1Stmt { bind(...v: unknown[]): D1Stmt; first<T>(): Promise<T | null>; all<T>(): Promise<{ results: T[] }>; run(): Promise<unknown> }
 interface D1 { prepare(q: string): D1Stmt; batch(s: D1Stmt[]): Promise<unknown> }
-interface Env { DB?: D1; TELEGRAM_BOT_TOKEN?: string; SESSION_SECRET?: string; TG_CHANNEL?: string; TG_BOT?: string; TG_LINK?: string; TG_TITLE?: string }
+interface Env { ASSETS?: { fetch: typeof fetch }; DB?: D1; TELEGRAM_BOT_TOKEN?: string; SESSION_SECRET?: string; TG_CHANNEL?: string; TG_BOT?: string; TG_LINK?: string; TG_TITLE?: string }
 interface Ctx { request: Request; env: Env; waitUntil(p: Promise<unknown>): void }
 interface Sess { u: string; t: number; c: number; s: 0 | 1; a?: 0 | 1 }
 
@@ -20,7 +21,7 @@ const hex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16)
 const b64u = (s: string) => btoa(String.fromCharCode(...enc.encode(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const unb64u = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)));
 async function hmac(key: ArrayBuffer | Uint8Array, msg: string) {
-  const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const k = await crypto.subtle.importKey("raw", key as BufferSource,{ name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return crypto.subtle.sign("HMAC", k, enc.encode(msg));
 }
 const same = (a: string, b: string) => { if (a.length !== b.length) return false; let x = 0; for (let i = 0; i < a.length; i++) x |= a.charCodeAt(i) ^ b.charCodeAt(i); return x === 0; };
@@ -117,6 +118,27 @@ export async function onRequest(ctx: Ctx): Promise<Response> {
   if (!s.s) return json({ error: "нужна подписка на канал", channel: channelName(env) }, 403, extra);
   const db = env.DB!;
 
+  // игра на сервере (apps/site-api/src/game.ts): фиксация, замена стендина, прогнозы, моё состояние, таблица турнира
+  if (route.startsWith("game/")) {
+    try {
+      const body = req.method === "POST" ? ((await req.json().catch(() => ({}))) as Record<string, any>) : {};
+      const tour = String(body.tour ?? url.searchParams.get("tour") ?? "");
+      if (!/^[a-z0-9_-]{1,40}$/.test(tour)) return json({ error: "tour" }, 400);
+      const { cfg, rules } = await tourCfg(env.ASSETS!, url.origin, tour);
+      const f = await loadFeed(env.ASSETS!, url.origin, cfg), op = route.slice(5), post = req.method === "POST";
+      let out: unknown;
+      if (op === "lock" && post) out = await lock(db, f, rules, tour, s.u, body as any);
+      else if (op === "swap" && post) out = await swap(db, f, rules, tour, s.u, body as any);
+      else if (op === "picks" && post) out = await picks(db, f, rules, tour, s.u, body as any);
+      else if (op === "pick-lock" && post) out = await pickLock(db, f, tour, s.u, Number(body.stage));
+      else if (op === "me" && !post) out = await me(db, f, rules, tour, s.u);
+      else if (op === "leaderboard" && !post) out = await leaderboard(db, f, rules, tour, s.u);
+      else return json({ error: "нет такого метода" }, 404);
+      // журнал — только принятые действия; прогнозы и так пишутся событием pk с сайта
+      if (post && op !== "picks") await logEvents(env, s.u, null, [{ type: "srv_" + op.replace("-", "_"), tour, data: { ...body, result: out } }]);
+      return json(out, 200, extra);
+    } catch (e) { if (e instanceof GameError) return json({ error: e.message }, e.status, extra); throw e; }
+  }
   if (route === "state" && req.method === "GET") {
     const row = await db.prepare("select data, updated from states where uid = ?").bind(s.u).first<{ data: string; updated: number }>();
     return json({ data: row ? JSON.parse(row.data) : null, updated: row?.updated ?? null }, 200, extra);
